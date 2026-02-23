@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from '../utils/axios';
 import { handleApiError } from '../utils/helpers';
+import PendingReviews from '../components/reviews/PendingReviews';
 import './DashboardPage.css';
 
 interface Booking {
@@ -277,6 +278,8 @@ export default function DashboardPage() {
 
         {/* Main Content */}
         <div className="sessions-main-card">
+          {/* Pending Reviews Alert */}
+          {token && <PendingReviews token={token} />}
           {/* Tabs */}
           <div className="tabs-container">
             {tabs.map((tab) => (

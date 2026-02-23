@@ -30,7 +30,7 @@ interface LoginResponse {
   user: User;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // FIX 2: Reverted to 'export const' (named export) to match your App.tsx import
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -60,10 +60,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const login = async (email: string, password: string) => {
     try {
       console.log('Attempting login...');
-      // FIX 3: Use correct endpoint path
-      const response = await axios.post<LoginResponse>('/auth/login', { email, password });
-      console.log('Login response:', response.data);
-      const { user, token } = response.data;
+  // FIX 3: Use correct endpoint path
+  const response = await axios.post('/auth/login', { email, password });
+  console.log('Login response:', response?.data);
+  const { user, token } = response?.data as LoginResponse;
       setUser(user);
       setToken(token);
       // Store token in localStorage for persistence
@@ -77,10 +77,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (userData: RegisterData) => {
     try {
       console.log('Attempting registration with:', userData);
-      // FIX 4: Use correct endpoint path
-      const response = await axios.post<LoginResponse>('/auth/register', userData);
-      console.log('Registration response:', response.data);
-      const { user, token } = response.data;
+  // FIX 4: Use correct endpoint path
+  const response = await axios.post('/auth/register', userData);
+  console.log('Registration response:', response?.data);
+  const { user, token } = response?.data as LoginResponse;
       setUser(user);
       setToken(token);
       // Store token in localStorage for persistence
@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 }
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;

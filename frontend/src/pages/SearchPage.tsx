@@ -156,8 +156,8 @@ export default function SearchPage() {
             skill: skill.skillName,
             proficiency: skill.level,
             creditRate: skill.creditsPerHour,
-            rating: skill.teacherRating || 4.5,
-            reviews: skill.teacherReviews || 10,
+            rating: skill.teacherRating || 0,
+            reviews: skill.teacherReviews || 0,
             bio: skill.description || skill.teacherBio || 'No description available',
             imageUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(skill.teacherName)}&background=022f49&color=fff&size=150`,
             available: true

@@ -1,42 +1,17 @@
 {
-  "name": "local-skill-swap-network",
+  "name": "skill-swap",
   "version": "1.0.0",
   "description": "A credit-based peer-to-peer skill exchange platform",
-  "main": "server.js",
+  "private": true,
   "scripts": {
-    "start": "node server.js",
-    "server": "nodemon server.js",
-    "client": "vite",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@iconify/react": "^6.0.2",
-    "@types/react-router-dom": "^5.3.3",
-    "autoprefixer": "^10.4.21",
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "dotenv": "^10.0.0",
-    "express": "^4.17.1",
-    "express-validator": "^7.3.0",
-    "jsonwebtoken": "^8.5.1",
-    "mongoose": "^6.0.0",
-    "postcss": "^8.5.6",
-    "react-router-dom": "^7.9.4",
-    "tailwindcss": "^4.1.16"
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm run dev",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start"
   },
   "devDependencies": {
-    "@types/node": "^24.9.1",
-    "@typescript-eslint/eslint-plugin": "^8.46.2",
-    "@typescript-eslint/parser": "^8.46.2",
-    "@vitejs/plugin-react": "^5.0.4",
-    "concurrently": "^6.2.0",
-    "eslint": "^9.38.0",
-    "eslint-plugin-react-hooks": "^7.0.0",
-    "globals": "^16.4.0",
-    "nodemon": "^2.0.12",
-    "typescript": "^5.9.3",
-    "vite": "^7.1.12"
+    "concurrently": "^6.2.0"
   }
 }

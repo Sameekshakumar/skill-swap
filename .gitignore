@@ -2,7 +2,15 @@ node_modules/
 build/
 dist/
 .env
+.env.local
 .DS_Store
 coverage/
 npm-debug.log
 yarn-error.log
+*.log
+.vscode/
+.idea/
+backend/node_modules/
+backend/dist/
+frontend/node_modules/
+frontend/dist/

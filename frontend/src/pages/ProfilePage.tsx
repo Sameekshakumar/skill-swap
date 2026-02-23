@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from '../utils/axios';
 import { getInitials, handleApiError } from '../utils/helpers';
+import ReviewsList from '../components/reviews/ReviewsList';
 import './ProfilePage.css';
 
 interface Skill {
@@ -478,6 +479,9 @@ const ProfilePage = () => {
               </div>
             ))}
           </div>
+        </div>
+        <div className="reviews-section">
+          <ReviewsList userId={user?.id || ''} userName={profile?.name} />
         </div>
       </div>
 

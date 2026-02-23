@@ -38,17 +38,19 @@
 .profile-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 2rem;
   margin-left: 0;
   margin-right: 0;
   padding-left: 0;
   padding-right: 0;
+  gap: 2rem;
 }
 
 .profile-page-container .header-title {
   display: flex;
   flex-direction: column;
+  align-self: center;
 }
 
 .profile-page-container .header-title h1 {
@@ -69,6 +71,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-shrink: 0;
 }
 
 .header-btn, .credit-balance-btn {
@@ -499,3 +502,16 @@
 .modal-btn-cancel:hover, .modal-btn-submit:hover {
   opacity: 0.9;
 }
+
+/* --- Reviews Section --- */
+.reviews-section {
+  margin-top: 2rem;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.reviews-section .reviews-container {
+  margin-left: 0;
+  margin-right: 0;
+}
+
