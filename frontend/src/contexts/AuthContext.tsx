@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from '../utils/axios'; // Use configured axios instance
+import { clearToken, forgetMe, getToken, setToken as storeToken } from '../utils/session';
 
 interface AuthContextType {
   user: User | null;
@@ -9,7 +10,7 @@ interface AuthContextType {
   // redirect to /login before the session has had a chance to restore.
   loading: boolean;
   // The browser obtains this credential from Google; the server verifies it.
-  loginWithGoogle: (credential: string) => Promise<User>;
+  loginWithGoogle: (credential: string, remember: boolean) => Promise<User>;
   logout: () => void;
   // Re-reads the profile so the navigation bar's credit count stays accurate
   // after a booking, cancellation or completion.
@@ -43,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Check for saved token on component mount
-    const savedToken = localStorage.getItem('token');
+    const savedToken = getToken();
     if (!savedToken) {
       setLoading(false);
       return;
@@ -58,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(response.data);
       })
       .catch(() => {
-        localStorage.removeItem('token');
+        clearToken();
         setToken(null);
       })
       .finally(() => {
@@ -66,13 +67,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
   }, []);
 
-  const loginWithGoogle = async (credential: string) => {
+  const loginWithGoogle = async (credential: string, remember: boolean) => {
     const response = await axios.post('/auth/google', { credential });
     const { user, token } = response?.data as LoginResponse;
 
     setUser(user);
     setToken(token);
-    localStorage.setItem('token', token);
+    storeToken(token, remember);
     return user;
   };
 
@@ -88,7 +89,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem('token');
+    clearToken();
+
+    // Signing out has to stick. Without both of these, Google's automatic
+    // sign-in hands the account straight back and logging out does nothing.
+    forgetMe();
+    (window as any).google?.accounts?.id?.disableAutoSelect?.();
+
     window.location.href = '/login';
   };
 

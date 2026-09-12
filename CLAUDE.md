@@ -104,9 +104,16 @@ over the direct connection.
 - `components/layout/Layout.tsx` renders `Navbar` + `<Outlet/>` and wraps every signed-in
   route. Pages must **not** draw their own header nav — they did, which is why "My Sessions"
   vanished on the discover page.
-- All colour lives in `styles/theme.css`, keyed off `data-theme` on `<html>`. Page stylesheets
-  must not declare `:root` variables or raw hex; three of them did, which broke dark mode.
-  `ThemeContext` sets the attribute and persists the choice, defaulting to the OS setting.
+- **`styles/design-system.css` owns the palette** (tokens are `--ss-*`, keyed off `data-theme`).
+  `styles/theme.css` is the only bridge, mapping the app's own variable names onto its tokens.
+  Page stylesheets must declare neither `:root` variables nor raw hex — three of them did,
+  which broke dark mode. `ThemeContext` sets the attribute and persists the choice.
+- **Nothing above the ambient layer may be opaque.** `AmbientBackground` is fixed at
+  `z-index: -10`; `<body>` paints the ground. An opaque page wrapper hides the blobs
+  completely, with no error — the single easiest way to break the look.
+- Headings use `--ss-font-display` (Playfair Display, loaded in `index.html`); body copy
+  stays sans. Panels use the one glass recipe listed in `theme.css`, never a flat fill.
+- Icons should use the `.ss-icon` mask so one black PNG serves both themes and any colour.
 - `.page-shell` (72rem, 2rem padding) is the shared width. The navbar and every page use it,
   so headings line up with the cards below them.
 - `.glass-pill` is the frosted navbar control — used by links, the credit badge and the

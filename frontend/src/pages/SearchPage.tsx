@@ -55,7 +55,7 @@ export default function SearchPage() {
     reviews: row.teacherReviews || 0,
     bio: row.description || row.teacherBio || 'No description available',
     imageUrl: row.teacherAvatar
-      || `https://ui-avatars.com/api/?name=${encodeURIComponent(row.teacherName)}&background=022f49&color=fff&size=150`
+      || `https://ui-avatars.com/api/?name=${encodeURIComponent(row.teacherName)}&background=4f46e5&color=fff&size=150`
   });
 
   const buildParams = (nextPage: number) => {

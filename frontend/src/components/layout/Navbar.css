@@ -1,11 +1,16 @@
+/* Floating: detached from the top edge and rounded, so the page ground and the
+   blobs read all the way around it. */
 .navbar {
   position: sticky;
-  top: 0;
+  top: 0.85rem;
   z-index: 50;
+  margin: 0.85rem 1rem 0;
+  border-radius: 999px;
   background-color: var(--glass-bg);
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
-  border-bottom: 1px solid var(--glass-border);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
 .navbar-inner {
@@ -13,9 +18,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  height: 4rem;
+  height: 3.5rem;
   width: 100%;
-  padding: 0 1.25rem;
+  padding: 0 0.85rem 0 1.5rem;
   box-sizing: border-box;
 }
 
@@ -82,55 +87,9 @@
   font-weight: 700;
 }
 
-/* Two-state switch: the knob slides across a frosted track. */
-.theme-switch {
-  position: relative;
-  width: 7.5rem;
-  padding: 0.3rem;
-  border-radius: 999px;
-  display: inline-flex;
-  gap: 0;
-}
-
-.theme-switch-knob {
-  position: absolute;
-  top: 0.3rem;
-  left: 0.3rem;
-  width: calc(50% - 0.3rem);
-  height: calc(100% - 0.6rem);
-  border-radius: 999px;
-  background-color: var(--glass-strong-bg);
-  transition: transform 0.22s ease;
-}
-
-:root[data-theme='dark'] .theme-switch-knob {
-  transform: translateX(100%);
-}
-
-.theme-switch-face {
-  position: relative;
-  z-index: 1;
-  flex: 1 1 50%;
-  display: grid;
-  place-items: center;
-  height: 1.25rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--nav-text);
-  transition: color 0.22s ease;
-}
-
-.theme-switch-face.selected {
-  color: var(--glass-strong-text);
-}
-
-@media (prefers-reduced-motion: reduce) {
+:root[data-theme='dark'] @media (prefers-reduced-motion: reduce) {
   .glass-pill,
-  .theme-switch-knob {
-    transition: none;
   }
-}
 
 @media (max-width: 768px) {
   .navbar-inner {
@@ -143,4 +102,27 @@
   .navbar-actions {
     justify-content: flex-start;
   }
+}
+
+/* Compact icon-only toggle. Square so the pill reads as a button, not a label. */
+.theme-toggle {
+  padding: 0.45rem;
+  width: 2.35rem;
+  height: 2.35rem;
+  justify-content: center;
+}
+
+.theme-toggle-icon {
+  height: 1.15rem;
+  width: 1.15rem;
+  background-color: var(--nav-text);
+}
+
+.theme-toggle:hover .theme-toggle-icon {
+  background-color: var(--ss-accent);
+}
+
+/* The sun flips to its night reading when the dark theme is on. */
+:root[data-theme='dark'] .theme-toggle-icon {
+  transform: rotate(180deg);
 }

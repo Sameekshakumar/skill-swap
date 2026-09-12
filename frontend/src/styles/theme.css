@@ -1,74 +1,64 @@
-/* Single source of truth for colour. Page stylesheets must not redeclare these
-   in :root — doing so breaks dark mode, since the page copy would always win. */
+/* Bridges the app's own variable names onto the UI kit's tokens.
+   design-system.css owns the palette; this file is the only place that translates it,
+   so page stylesheets keep working unchanged. Never redeclare a colour here in
+   a page stylesheet — that is what broke dark mode the first time round. */
 
 :root,
 :root[data-theme='light'] {
-  --bg-color: #9DBEBB;
-  --card-bg-color: #FFFFFF;
-  --primary-text: #031926;
-  --secondary-text: #468189;
-  --accent-color: #77ACA2;
-  --accent-light: #F0F5F4;
-  --purple-accent: #8B5CF6;
-  --purple-light: #F3F0FF;
-  --green-accent: #10B981;
-  --green-light: #D1FAE5;
-  --amber-accent: #B45309;
-  --amber-light: #FEF3C7;
-  --input-bg: #F4E9CD;
-  --button-bg: #031926;
-  --button-text: #FFFFFF;
-  --border-color: #E5E7EB;
+  --bg-color: var(--ss-bg);
+  --card-bg-color: var(--ss-glass-bg);
+  --primary-text: var(--ss-text);
+  --secondary-text: var(--ss-text-muted);
+  --accent-color: var(--ss-blue);
+  --accent-light: rgba(26, 86, 219, 0.08);
+  --purple-accent: var(--ss-indigo);
+  --purple-light: rgba(99, 102, 241, 0.1);
+  --green-accent: #0f766e;
+  --green-light: rgba(15, 118, 110, 0.12);
+  --amber-accent: #b45309;
+  --amber-light: rgba(180, 83, 9, 0.12);
+  --input-bg: rgba(255, 255, 255, 0.55);
+  --button-bg: var(--ss-accent);
+  --button-text: var(--ss-accent-fg);
+  --border-color: var(--ss-glass-border);
 
-  /* Frosted surfaces for the navigation bar */
-  --glass-bg: rgba(255, 255, 255, 0.28);
-  --glass-bg-hover: rgba(255, 255, 255, 0.45);
-  --glass-border: rgba(255, 255, 255, 0.55);
-  --glass-strong-bg: rgba(3, 25, 38, 0.82);
-  --glass-strong-text: #FFFFFF;
-  --glass-shadow: 0 6px 24px rgba(3, 25, 38, 0.12);
-  --nav-text: #031926;
+  /* Navigation surfaces reuse the kit's glass so there is one recipe, not two. */
+  --glass-bg: var(--ss-glass-bg);
+  --glass-bg-hover: rgba(255, 255, 255, 0.85);
+  --glass-border: var(--ss-glass-border);
+  --glass-strong-bg: color-mix(in srgb, var(--ss-accent) 80%, transparent);
+  --glass-strong-text: var(--ss-accent-fg);
+  --glass-shadow: 0 10px 15px -3px var(--ss-glass-shadow);
+  --brand-ink: #1e3a8a;
+  --nav-text: var(--brand-ink);
 }
 
 :root[data-theme='dark'] {
-  --bg-color: #0E1B1A;
-  --card-bg-color: #162725;
-  --primary-text: #E8F1EF;
-  --secondary-text: #94B3AE;
-  --accent-color: #77ACA2;
-  --accent-light: #1C302D;
-  --purple-accent: #A78BFA;
-  --purple-light: #241F3A;
-  --green-accent: #34D399;
-  --green-light: #10301F;
-  --amber-accent: #FBBF24;
-  --amber-light: #33280E;
-  --input-bg: #1E302D;
-  --button-bg: #77ACA2;
-  --button-text: #06201C;
-  --border-color: #274441;
-
-  --glass-bg: rgba(255, 255, 255, 0.07);
-  --glass-bg-hover: rgba(255, 255, 255, 0.14);
-  --glass-border: rgba(255, 255, 255, 0.16);
-  --glass-strong-bg: rgba(119, 172, 162, 0.9);
-  --glass-strong-text: #06201C;
-  --glass-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
-  --nav-text: #E8F1EF;
+  --brand-ink: var(--ss-blue-mid);
+  --nav-text: var(--ss-text);
+  --accent-color: var(--ss-blue-mid);
+  --accent-light: rgba(208, 224, 252, 0.08);
+  --green-accent: #5eead4;
+  --green-light: rgba(94, 234, 212, 0.12);
+  --amber-accent: #fbbf24;
+  --amber-light: rgba(251, 191, 36, 0.12);
+  --input-bg: rgba(15, 23, 42, 0.55);
+  --glass-bg-hover: rgba(30, 41, 59, 0.8);
 }
 
 html {
   color-scheme: light;
-  background-color: var(--bg-color);
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
 }
 
+/* The ambient layer sits at z-index -10, so the page ground must be painted by
+   <body> and nothing above it may be opaque. */
 body {
-  background-color: var(--bg-color);
-  color: var(--primary-text);
+  background: var(--ss-bg);
+  color: var(--ss-text);
 }
 
 /* Vite's starter stylesheet gave every button a radius, a border and a heavy
@@ -86,7 +76,7 @@ button:focus {
 }
 
 :where(a, button, input, select, textarea):focus-visible {
-  outline: 2px solid var(--accent-color);
+  outline: 2px solid var(--ss-accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -100,20 +90,24 @@ button:focus {
 }
 
 .page-heading {
-  padding: 2.25rem 0 1.5rem;
+  padding: 2.5rem 0 1.5rem;
 }
 
+/* Headings are the display serif; body copy stays sans. */
 .page-heading h1 {
-  font-size: 2rem;
-  line-height: 1.2;
+  font-family: var(--ss-font-display);
+  font-size: 2.25rem;
+  line-height: 1.1;
+  /* 700 rather than 600: at display size the lighter weight read as stretched. */
   font-weight: 700;
-  color: var(--primary-text);
+  letter-spacing: -0.025em;
+  color: var(--accent-text);
   margin: 0;
 }
 
 .page-heading p {
-  margin: 0.35rem 0 0;
-  color: var(--secondary-text);
+  margin: 0.4rem 0 0;
+  color: var(--ss-text);
   font-size: 1rem;
 }
 
@@ -121,4 +115,131 @@ button:focus {
   .page-shell {
     padding: 0 1rem;
   }
+}
+
+/* The ambient layer is fixed behind everything; its host must not be opaque. */
+.app-frame {
+  position: relative;
+  min-height: 100vh;
+}
+
+/* --- Glass surfaces -------------------------------------------------------
+   Every panel in the app gets the kit's one glass recipe rather than a flat
+   fill. Listing the selectors here keeps the recipe in a single place; the page
+   stylesheets only set their own size, spacing and radius. */
+.login-box,
+.welcome-box,
+.profile-card,
+.discover-main-card,
+.sessions-main-card,
+.teacher-card,
+.booking-card,
+.confirm-box,
+.modal-content {
+  background: var(--ss-glass-bg);
+  border: 1px solid var(--ss-glass-border);
+  box-shadow: 0 10px 15px -3px var(--ss-glass-shadow);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* --- Display type ---------------------------------------------------------
+   Page titles and every card heading use the serif; body copy stays sans. */
+.page-heading h1,
+.login-title,
+.welcome-title,
+.login-title,
+.welcome-title,
+.profile-card-header h2,
+.skills-card-title,
+.section-title h2,
+.teacher-section-title,
+.modal-title,
+.teacher-card h3,
+.booking-card h3,
+.reviews-title {
+  font-family: var(--ss-font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* --- Primary actions ------------------------------------------------------
+   Glass rather than a flat fill, matching the kit's primary button. */
+.login-button,
+.welcome-button,
+.request-session-btn,
+.action-btn.accept-btn,
+.action-btn.complete-btn,
+.modal-btn-submit,
+.save-btn {
+  color: var(--ss-accent-fg);
+  background: color-mix(in srgb, var(--ss-accent) 80%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--ss-accent) 25%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background-color 150ms ease;
+}
+
+.login-button:hover:not(:disabled),
+.welcome-button:hover:not(:disabled),
+.request-session-btn:hover:not(:disabled),
+.action-btn.accept-btn:hover:not(:disabled),
+.action-btn.complete-btn:hover:not(:disabled),
+.modal-btn-submit:hover:not(:disabled),
+.save-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ss-accent) 95%, transparent);
+}
+
+/* --- Secondary emphasis ---------------------------------------------------
+   Not every line should be the same white. Card headings and field labels take
+   the pale blue so the eye has somewhere to land; body copy stays neutral.
+   Light mode uses the royal blue, since the pale tint vanishes on white. */
+:root {
+  --accent-text: var(--brand-ink);
+}
+
+.login-title,
+.welcome-title,
+.profile-card-header h2,
+.skills-card-title,
+.section-title h2,
+.teacher-section-title,
+.reviews-title,
+.modal-title {
+  color: var(--accent-text);
+}
+
+.detail-item label,
+.profile-card .detail-item label,
+.welcome-form .form-label,
+.filters-section .filters-header,
+.discover-main-card .results-count {
+  color: var(--accent-text);
+}
+
+/* The wordmark is the brand, so it wears the display face too. */
+.navbar-brand {
+  font-family: var(--ss-font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* --- Credits --------------------------------------------------------------
+   Credits are a balance, not a navigation state, so they must not wear the
+   same colour as the active page. Pale tint, saturated numerals. */
+.navbar .navbar-brand {
+  color: var(--brand-ink);
+}
+
+.navbar .glass-pill.credit-pill {
+  background: color-mix(in srgb, var(--ss-blue-mid) 88%, transparent);
+  border-color: color-mix(in srgb, var(--ss-blue) 22%, transparent);
+  color: #10245c;
+}
+
+.navbar .glass-pill.credit-pill .credit-amount {
+  color: var(--ss-accent);
+  font-weight: 700;
 }
