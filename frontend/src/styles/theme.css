@@ -1,0 +1,124 @@
+/* Single source of truth for colour. Page stylesheets must not redeclare these
+   in :root — doing so breaks dark mode, since the page copy would always win. */
+
+:root,
+:root[data-theme='light'] {
+  --bg-color: #9DBEBB;
+  --card-bg-color: #FFFFFF;
+  --primary-text: #031926;
+  --secondary-text: #468189;
+  --accent-color: #77ACA2;
+  --accent-light: #F0F5F4;
+  --purple-accent: #8B5CF6;
+  --purple-light: #F3F0FF;
+  --green-accent: #10B981;
+  --green-light: #D1FAE5;
+  --amber-accent: #B45309;
+  --amber-light: #FEF3C7;
+  --input-bg: #F4E9CD;
+  --button-bg: #031926;
+  --button-text: #FFFFFF;
+  --border-color: #E5E7EB;
+
+  /* Frosted surfaces for the navigation bar */
+  --glass-bg: rgba(255, 255, 255, 0.28);
+  --glass-bg-hover: rgba(255, 255, 255, 0.45);
+  --glass-border: rgba(255, 255, 255, 0.55);
+  --glass-strong-bg: rgba(3, 25, 38, 0.82);
+  --glass-strong-text: #FFFFFF;
+  --glass-shadow: 0 6px 24px rgba(3, 25, 38, 0.12);
+  --nav-text: #031926;
+}
+
+:root[data-theme='dark'] {
+  --bg-color: #0E1B1A;
+  --card-bg-color: #162725;
+  --primary-text: #E8F1EF;
+  --secondary-text: #94B3AE;
+  --accent-color: #77ACA2;
+  --accent-light: #1C302D;
+  --purple-accent: #A78BFA;
+  --purple-light: #241F3A;
+  --green-accent: #34D399;
+  --green-light: #10301F;
+  --amber-accent: #FBBF24;
+  --amber-light: #33280E;
+  --input-bg: #1E302D;
+  --button-bg: #77ACA2;
+  --button-text: #06201C;
+  --border-color: #274441;
+
+  --glass-bg: rgba(255, 255, 255, 0.07);
+  --glass-bg-hover: rgba(255, 255, 255, 0.14);
+  --glass-border: rgba(255, 255, 255, 0.16);
+  --glass-strong-bg: rgba(119, 172, 162, 0.9);
+  --glass-strong-text: #06201C;
+  --glass-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+  --nav-text: #E8F1EF;
+}
+
+html {
+  color-scheme: light;
+  background-color: var(--bg-color);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--primary-text);
+}
+
+/* Vite's starter stylesheet gave every button a radius, a border and a heavy
+   focus ring. That ring is what made the active tab look boxed-in. */
+button {
+  border-radius: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+}
+
+button:focus {
+  outline: none;
+}
+
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Every page lines its heading up with the cards beneath it. */
+.page-shell {
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.page-heading {
+  padding: 2.25rem 0 1.5rem;
+}
+
+.page-heading h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--primary-text);
+  margin: 0;
+}
+
+.page-heading p {
+  margin: 0.35rem 0 0;
+  color: var(--secondary-text);
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .page-shell {
+    padding: 0 1rem;
+  }
+}

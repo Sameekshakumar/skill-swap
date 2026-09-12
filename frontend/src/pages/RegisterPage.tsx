@@ -7,6 +7,8 @@ export default function RegisterPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    college: '',
+    yearOfStudy: '',
     password: '',
     confirmPassword: ''
   });
@@ -19,7 +21,8 @@ export default function RegisterPage() {
     setError(''); // Clear any previous errors
     
     // Basic validation
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+    if (!formData.name || !formData.email || !formData.college || !formData.yearOfStudy
+        || !formData.password || !formData.confirmPassword) {
       setError('All fields are required');
       return;
     }
@@ -35,10 +38,12 @@ export default function RegisterPage() {
     }
     
     try {
-      await register({ 
-        name: formData.name, 
-        email: formData.email, 
-        password: formData.password 
+      await register({
+        name: formData.name,
+        email: formData.email,
+        college: formData.college,
+        yearOfStudy: formData.yearOfStudy,
+        password: formData.password
       });
       navigate('/login');
     } catch (err: any) {
@@ -90,6 +95,39 @@ export default function RegisterPage() {
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
                 className="input-field"
               />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="college" className="form-label">College</label>
+            <div className="input-container">
+              <input
+                id="college"
+                type="text"
+                placeholder="Your college or university"
+                value={formData.college}
+                onChange={(e) => setFormData({...formData, college: e.target.value})}
+                className="input-field no-icon"
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="yearOfStudy" className="form-label">Year of Study</label>
+            <div className="input-container">
+              <select
+                id="yearOfStudy"
+                value={formData.yearOfStudy}
+                onChange={(e) => setFormData({...formData, yearOfStudy: e.target.value})}
+                className="input-field no-icon"
+              >
+                <option value="">Select your year</option>
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="4th Year">4th Year</option>
+                <option value="Postgraduate">Postgraduate</option>
+              </select>
             </div>
           </div>
 

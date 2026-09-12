@@ -3,6 +3,7 @@ import './RequestSessionModal.css';
 
 interface Teacher {
   id: string;
+  skillId: string;
   name: string;
   university: string;
   year: string;
@@ -18,7 +19,7 @@ interface Teacher {
 interface RequestSessionModalProps {
   teacher: Teacher;
   onClose: () => void;
-  onSubmit: (data: { teacherId: string; skill: string; dateTime: string; duration: number; notes: string; creditsPerHour: number }) => void;
+  onSubmit: (data: { teacherId: string; skillId: string; skill: string; dateTime: string; duration: number; notes: string; creditsPerHour: number }) => void;
 }
 
 export default function RequestSessionModal({ teacher, onClose, onSubmit }: RequestSessionModalProps) {
@@ -35,6 +36,7 @@ export default function RequestSessionModal({ teacher, onClose, onSubmit }: Requ
 
     onSubmit({
       teacherId: teacher.id,
+      skillId: teacher.skillId,
       skill: teacher.skill,
       dateTime,
       duration,
@@ -98,10 +100,9 @@ export default function RequestSessionModal({ teacher, onClose, onSubmit }: Requ
               onChange={(e) => setDuration(Number(e.target.value))}
               required
             >
-              <option value={0.5}>0.5 hours</option>
               <option value={1}>1 hour</option>
-              <option value={1.5}>1.5 hours</option>
               <option value={2}>2 hours</option>
+              <option value={3}>3 hours</option>
             </select>
           </div>
 

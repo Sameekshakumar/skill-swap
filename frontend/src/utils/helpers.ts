@@ -2,6 +2,7 @@
 export function getInitials(name: string): string {
   return name
     .split(' ')
+    .filter(Boolean)
     .map(word => word[0])
     .join('')
     .toUpperCase();
@@ -9,10 +10,14 @@ export function getInitials(name: string): string {
 
 // Helper function to handle API errors
 export function handleApiError(error: any): string {
-  if (error.response?.data?.msg) {
-    return error.response.data.msg;
-  } else if (error.message) {
-    return error.message;
-  }
-  return 'An error occurred';
+  // The axios instance already unwraps server errors into Error.message.
+  // The response checks are for anything that bypasses that interceptor.
+  const data = error?.response?.data;
+  return (
+    data?.error ||
+    data?.errors?.[0]?.msg ||
+    data?.msg ||
+    error?.message ||
+    'An error occurred'
+  );
 }

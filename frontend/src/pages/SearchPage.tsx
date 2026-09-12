@@ -8,6 +8,7 @@ import './SearchPage.css';
 
 interface Teacher {
   id: string;
+  skillId: string;
   name: string;
   university: string;
   year: string;
@@ -24,132 +25,31 @@ interface Teacher {
 export default function SearchPage() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
-  const [creditBalance, setCreditBalance] = useState(10);
   const [filters, setFilters] = useState({
     skillLevel: 'all',
     creditRate: 'all',
     availability: 'all',
     minRating: 'all'
   });
-  const { user, logout, token } = useAuth();
+  const { user, token, refreshUser } = useAuth();
   const navigate = useNavigate();
 
-  // Mock data for demonstration
-  const mockTeachers: Teacher[] = [
-    {
-      id: '1',
-      name: 'Sarah Johnson',
-      university: 'MIT',
-      year: '4th Year',
-      skill: 'Guitar',
-      proficiency: 'Advanced',
-      creditRate: 2,
-      rating: 4.9,
-      reviews: 45,
-      bio: 'Passionate about teaching guitar and helping students find their musical voice. Teaching acoustic and electric guitar for all levels. Specializing in fingerstyle and music theory.',
-      imageUrl: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-      available: true
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      university: 'MIT',
-      year: '4th Year',
-      skill: 'Music Theory',
-      proficiency: 'Advanced',
-      creditRate: 2,
-      rating: 4.8,
-      reviews: 32,
-      bio: 'Passionate about teaching guitar and helping students find their musical voice. Comprehensive music theory from basics to advanced composition.',
-      imageUrl: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-      available: true
-    },
-    {
-      id: '3',
-      name: 'Elena Rodriguez',
-      university: 'UC Berkeley',
-      year: '3rd Year',
-      skill: 'Spanish',
-      proficiency: 'Advanced',
-      creditRate: 2,
-      rating: 4.9,
-      reviews: 89,
-      bio: 'Native Spanish speaker from Madrid. Teaching Spanish and European culture. Conversational Spanish, grammar, and cultural immersion. Perfect for beginners to advanced.',
-      imageUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-      available: true
-    },
-    {
-      id: '4',
-      name: 'James Anderson',
-      university: 'Harvard University',
-      year: 'Postgraduate',
-      skill: 'Data Science',
-      proficiency: 'Advanced',
-      creditRate: 3,
-      rating: 4.7,
-      reviews: 41,
-      bio: 'Data scientist passionate about making machine learning accessible to everyone. Machine learning, statistics, and data visualization using Python and R.',
-      imageUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      available: true
-    },
-    {
-      id: '5',
-      name: 'James Anderson',
-      university: 'Harvard University',
-      year: 'Postgraduate',
-      skill: 'Statistics',
-      proficiency: 'Advanced',
-      creditRate: 2,
-      rating: 4.8,
-      reviews: 35,
-      bio: 'Data scientist passionate about making machine learning accessible to everyone. Applied statistics for data analysis and research.',
-      imageUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      available: true
-    },
-    {
-      id: '6',
-      name: 'Priya Sharma',
-      university: 'Yale University',
-      year: '2nd Year',
-      skill: 'Yoga',
-      proficiency: 'Intermediate',
-      creditRate: 1,
-      rating: 4.9,
-      reviews: 52,
-      bio: 'Yoga instructor and wellness enthusiast. Teaching mindfulness and healthy living. Beginner-friendly yoga sessions focusing on flexibility, strength, and mindfulness.',
-      imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
-      available: true
-    }
-  ];
-
   useEffect(() => {
-    // Fetch profile to get updated credit balance
-    const fetchProfile = async () => {
-      try {
-        const config = { headers: { Authorization: `Bearer ${token}` } };
-        const profileResponse = await axios.get('/profile', config);
-        setCreditBalance(profileResponse.data.creditBalance);
-      } catch (error) {
-        console.log('Could not fetch profile');
-      }
-    };
-    
-    fetchProfile();
-  }, [token]);
-
-  useEffect(() => {
-    // Try to fetch real teachers from API, fall back to mock data
     const fetchTeachers = async () => {
       try {
         const response = await axios.get('/users/teachers/search');
-        if (response.data && response.data.length > 0) {
-          // Transform API data to match Teacher interface
-          const realTeachers = response.data.map((skill: any) => ({
+        // One row per skill offered. Your own listings are dropped: you cannot
+        // book yourself, so showing them would only produce a failed request.
+        const realTeachers = response.data
+          .filter((skill: any) => skill.teacherId !== user?.id)
+          .map((skill: any) => ({
             id: skill.teacherId,
+            skillId: skill.skillId,
             name: skill.teacherName,
             university: skill.teacherCollege || 'Unknown',
             year: skill.teacherYear || '',
@@ -162,24 +62,18 @@ export default function SearchPage() {
             imageUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(skill.teacherName)}&background=022f49&color=fff&size=150`,
             available: true
           }));
-          setTeachers(realTeachers);
-        } else {
-          // Fall back to mock data
-          setTeachers(mockTeachers);
-        }
+        setTeachers(realTeachers);
       } catch (error) {
-        console.log('Could not fetch real teachers, using mock data:', error);
-        // Fall back to mock data
-        setTeachers(mockTeachers);
+        setLoadError(handleApiError(error));
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchTeachers();
-  }, []);
 
-  const handleRequestSession = async (requestData: { teacherId: string; skill: string; dateTime: string; duration: number; notes: string; creditsPerHour: number }) => {
+    fetchTeachers();
+  }, [user?.id]);
+
+  const handleRequestSession = async (requestData: { teacherId: string; skillId: string; skill: string; dateTime: string; duration: number; notes: string; creditsPerHour: number }) => {
     setIsRequesting(true);
     try {
       const config = {
@@ -188,6 +82,7 @@ export default function SearchPage() {
       
       await axios.post('/bookings', {
         teacherId: requestData.teacherId,
+        skillId: requestData.skillId,
         skill: requestData.skill,
         dateTime: requestData.dateTime,
         duration: requestData.duration,
@@ -196,8 +91,7 @@ export default function SearchPage() {
       }, config);
 
       // Refresh credit balance after successful booking
-      const profileResponse = await axios.get('/profile', config);
-      setCreditBalance(profileResponse.data.creditBalance);
+      await refreshUser();
 
       setIsRequestModalOpen(false);
       setSelectedTeacher(null);
@@ -227,28 +121,9 @@ export default function SearchPage() {
     <div className="discover-page-container">
       <div className="discover-page-content">
         {/* Header */}
-        <div className="discover-header">
-          <div className="header-left">
-            <div className="header-title">
-              <span className="compass-icon">🧭</span>
-              <h1>Discover Skills</h1>
-            </div>
-            <p className="header-subtitle">Find teachers and learn new skills</p>
-          </div>
-          <div className="header-actions">
-            <div className="credit-balance-btn">
-              <span>💳</span>
-              <span>{creditBalance} credits</span>
-            </div>
-            <Link to="/profile" className="header-btn">
-              <span>👤</span>
-              <span>My Profile</span>
-            </Link>
-            <button onClick={logout} className="header-btn">
-              <span>↗️</span>
-              <span>Logout</span>
-            </button>
-          </div>
+        <div className="page-heading">
+          <h1>Discover Skills</h1>
+          <p>Find teachers and learn new skills</p>
         </div>
 
         {/* Main Content */}
@@ -256,8 +131,7 @@ export default function SearchPage() {
           {/* Search Bar */}
           <div className="search-section">
             <div className="search-bar">
-              <span className="search-icon">🔍</span>
-              <input
+                            <input
                 type="text"
                 placeholder="Search for skills, teachers, or keywords..."
                 value={searchQuery}
@@ -270,8 +144,7 @@ export default function SearchPage() {
           {/* Filters */}
           <div className="filters-section">
             <div className="filters-header">
-              <span className="filter-icon">🔽</span>
-              <span>Filters</span>
+                            <span>Filters</span>
             </div>
             <div className="filters-grid">
               <select
@@ -327,9 +200,17 @@ export default function SearchPage() {
           <div className="teachers-grid">
             {loading ? (
               <div className="loading">Loading...</div>
+            ) : loadError ? (
+              <div className="loading">{loadError}</div>
+            ) : filteredTeachers.length === 0 ? (
+              <div className="loading">
+                {teachers.length === 0
+                  ? 'Nobody is offering skills yet. Add one on your profile to be the first.'
+                  : 'No teachers match your search.'}
+              </div>
             ) : (
               filteredTeachers.map((teacher) => (
-                <div key={teacher.id} className="teacher-card">
+                <div key={teacher.skillId} className="teacher-card">
                   <div className="card-header">
                     <div className="teacher-info">
                       <img 
@@ -343,7 +224,7 @@ export default function SearchPage() {
                       </div>
                     </div>
                     <div className="availability-tag">
-                      <span>📅</span>
+                      
                       <span>Available</span>
                     </div>
                   </div>
@@ -357,16 +238,15 @@ export default function SearchPage() {
                   <div className="teacher-stats">
                     <span className="proficiency-tag">{teacher.proficiency}</span>
                     <span className="credit-rate">
-                      <span>💳</span>
+                      
                       <span>{teacher.creditRate} credits/hr</span>
                     </span>
                     <div className="rating">
-                      {[...Array(5)].map((_, i) => (
-                        <span key={i} className={`star ${i < Math.floor(teacher.rating) ? 'filled' : ''}`}>
-                          ⭐
-                        </span>
-                      ))}
-                      <span className="rating-text">{teacher.rating} ({teacher.reviews})</span>
+                      <span className="rating-text">
+                        {teacher.reviews > 0
+                          ? `${teacher.rating} out of 5 · ${teacher.reviews} reviews`
+                          : 'No reviews yet'}
+                      </span>
                     </div>
                   </div>
                   

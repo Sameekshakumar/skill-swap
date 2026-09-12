@@ -70,8 +70,9 @@ const ReviewModal = ({
                     type="button"
                     className={`star ${rating >= star ? 'active' : ''}`}
                     onClick={() => setRating(star)}
+                    aria-label={`${star} out of 5`}
                   >
-                    ⭐
+                    {star}
                   </button>
                 ))}
               </div>

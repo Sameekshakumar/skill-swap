@@ -22,10 +22,9 @@ interface Booking {
 }
 
 export default function DashboardPage() {
-  const { user, logout, token } = useAuth();
+  const { user, token, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('requests');
-  const [creditBalance, setCreditBalance] = useState(user?.creditBalance || 10);
   
   const [requests, setRequests] = useState<Booking[]>([]);
   const [myRequests, setMyRequests] = useState<Booking[]>([]);
@@ -45,19 +44,18 @@ export default function DashboardPage() {
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
-      const [requestsRes, myRequestsRes, upcomingRes, completedRes, profileRes] = await Promise.all([
+      const [requestsRes, myRequestsRes, upcomingRes, completedRes] = await Promise.all([
         axios.get('/bookings/requests', config),
         axios.get('/bookings/my-requests', config),
         axios.get('/bookings/upcoming', config),
-        axios.get('/bookings/completed', config),
-        axios.get('/profile', config)
+        axios.get('/bookings/completed', config)
       ]);
 
       setRequests(requestsRes.data);
       setMyRequests(myRequestsRes.data);
       setUpcoming(upcomingRes.data);
       setCompleted(completedRes.data);
-      setCreditBalance(profileRes.data.creditBalance);
+      await refreshUser();
       setLoading(false);
     } catch (error) {
       console.error('Error fetching bookings:', error);
@@ -66,25 +64,7 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    // First, cleanup any orphaned bookings and refund credits
-    const cleanupAndFetch = async () => {
-      try {
-        const config = { headers: { Authorization: `Bearer ${token}` } };
-        const response = await axios.get('/bookings/cleanup-orphaned', config);
-        if (response.data.creditsRefunded > 0) {
-          console.log(`Credits refunded: ${response.data.creditsRefunded}`);
-          // Refresh user data to update credit balance
-          window.location.reload();
-          return;
-        }
-      } catch (error) {
-        console.log('No orphaned bookings to clean up');
-      }
-      // Then fetch bookings
-      fetchBookings();
-    };
-    
-    cleanupAndFetch();
+    fetchBookings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -180,16 +160,13 @@ export default function DashboardPage() {
         
         <div className="booking-details">
           <div className="booking-detail-item">
-            <span className="detail-label">📅</span>
-            <span>{formatDateTime(booking.dateTime)}</span>
+                        <span>{formatDateTime(booking.dateTime)}</span>
           </div>
           <div className="booking-detail-item">
-            <span className="detail-label">⏱️</span>
-            <span>{booking.duration} hour{booking.duration !== 1 ? 's' : ''}</span>
+                        <span>{booking.duration} hour{booking.duration !== 1 ? 's' : ''}</span>
           </div>
           <div className="booking-detail-item">
-            <span className="detail-label">💳</span>
-            <span>{booking.creditAmount} credits</span>
+                        <span>{booking.creditAmount} credits</span>
           </div>
         </div>
 
@@ -235,8 +212,8 @@ export default function DashboardPage() {
               onClick={() => handleComplete(booking.id, isTeacher ? 'teacher' : 'learner')}
               disabled={actionLoading === booking.id}
             >
-              {isTeacher ? booking.completedByTeacher ? '✓ Marked Complete by You' : 'Mark Complete' 
-                       : booking.completedByLearner ? '✓ Marked Complete by You' : 'Mark Complete'}
+              {isTeacher ? booking.completedByTeacher ? 'Marked Complete by You' : 'Mark Complete' 
+                       : booking.completedByLearner ? 'Marked Complete by You' : 'Mark Complete'}
             </button>
           )}
         </div>
@@ -247,33 +224,9 @@ export default function DashboardPage() {
   return (
     <div className="sessions-page-container">
       <div className="sessions-page-content">
-        {/* Header */}
-        <div className="sessions-header">
-          <div className="header-left">
-            <div className="header-title">
-              <span className="calendar-icon">📅</span>
-              <h1>My Sessions</h1>
-            </div>
-            <p className="header-subtitle">Manage your bookings and sessions</p>
-          </div>
-          <div className="header-actions">
-            <div className="credit-balance-btn">
-              <span>💳</span>
-              <span>{creditBalance} credits</span>
-            </div>
-            <Link to="/" className="header-btn">
-              <span>👁️</span>
-              <span>Discover</span>
-            </Link>
-            <Link to="/profile" className="header-btn">
-              <span>👤</span>
-              <span>Profile</span>
-            </Link>
-            <button onClick={logout} className="header-btn">
-              <span>↗️</span>
-              <span>Logout</span>
-            </button>
-          </div>
+        <div className="page-heading">
+          <h1>My Sessions</h1>
+          <p>Manage your bookings and sessions</p>
         </div>
 
         {/* Main Content */}
@@ -303,7 +256,6 @@ export default function DashboardPage() {
                   <div className="requests-section">
                     <div className="section-header">
                       <div className="section-title">
-                        <span className="section-icon">⚠️</span>
                         <h2>Session Requests</h2>
                       </div>
                       <p className="section-description">Students requesting to learn from you.</p>
@@ -311,7 +263,6 @@ export default function DashboardPage() {
                     
                     {requests.length === 0 ? (
                       <div className="empty-state">
-                        <div className="empty-icon">🕐</div>
                         <h3>No pending requests</h3>
                         <p>When students request sessions with you, they'll appear here.</p>
                       </div>
@@ -329,7 +280,6 @@ export default function DashboardPage() {
                   <div className="my-requests-section">
                     <div className="section-header">
                       <div className="section-title">
-                        <span className="section-icon">📤</span>
                         <h2>My Requests</h2>
                       </div>
                       <p className="section-description">Sessions you've requested from other teachers.</p>
@@ -337,7 +287,6 @@ export default function DashboardPage() {
                     
                     {myRequests.length === 0 ? (
                       <div className="empty-state">
-                        <div className="empty-icon">📝</div>
                         <h3>No requests sent</h3>
                         <p>When you request sessions with teachers, they'll appear here.</p>
                       </div>
@@ -355,7 +304,6 @@ export default function DashboardPage() {
                   <div className="upcoming-section">
                     <div className="section-header">
                       <div className="section-title">
-                        <span className="section-icon">📅</span>
                         <h2>Upcoming Sessions</h2>
                       </div>
                       <p className="section-description">Your confirmed sessions.</p>
@@ -363,7 +311,6 @@ export default function DashboardPage() {
                     
                     {upcoming.length === 0 ? (
                       <div className="empty-state">
-                        <div className="empty-icon">⏰</div>
                         <h3>No upcoming sessions</h3>
                         <p>Your scheduled sessions will appear here.</p>
                       </div>
@@ -381,7 +328,6 @@ export default function DashboardPage() {
                   <div className="completed-section">
                     <div className="section-header">
                       <div className="section-title">
-                        <span className="section-icon">✅</span>
                         <h2>Completed Sessions</h2>
                       </div>
                       <p className="section-description">Your finished sessions.</p>
@@ -389,7 +335,6 @@ export default function DashboardPage() {
                     
                     {completed.length === 0 ? (
                       <div className="empty-state">
-                        <div className="empty-icon">🎉</div>
                         <h3>No completed sessions</h3>
                         <p>Your completed sessions will appear here.</p>
                       </div>

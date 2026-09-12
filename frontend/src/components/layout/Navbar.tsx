@@ -1,41 +1,52 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import './Navbar.css';
+
+const links = [
+  { to: '/', label: 'Discover' },
+  { to: '/dashboard', label: 'My Sessions' },
+  { to: '/profile', label: 'My Profile' }
+];
 
 export default function Navbar() {
   const { user, logout } = useAuth();
-  const location = useLocation();
-
-  const links = [
-    { to: '/', label: 'Search' },
-    { to: '/dashboard', label: 'My Sessions' },
-    { to: '/profile', label: 'Profile' }
-  ];
+  const { theme, toggleTheme } = useTheme();
 
   return (
-    <nav className="bg-white shadow-sm">
-      <div className="max-w-6xl mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            {links.map(link => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={`${
-                  location.pathname === link.to
-                    ? 'text-purple-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-          <button 
-            onClick={logout}
-            className="text-gray-600 hover:text-gray-900"
+    <nav className="navbar">
+      <div className="navbar-inner">
+        <Link to="/" className="navbar-brand">Skill Swap</Link>
+
+        <div className="navbar-actions">
+          <span className="glass-pill credit-pill">
+            <span className="credit-amount">{user?.creditBalance ?? 0}</span>
+            <span>credits</span>
+          </span>
+
+          {links.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              end={link.to === '/'}
+              className={({ isActive }) => `glass-pill nav-link${isActive ? ' active' : ''}`}
+            >
+              {link.label}
+            </NavLink>
+          ))}
+
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="glass-pill theme-switch"
+            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
           >
-            Logout
+            <span className="theme-switch-knob" aria-hidden="true" />
+            <span className={`theme-switch-face${theme === 'light' ? ' selected' : ''}`}>Day</span>
+            <span className={`theme-switch-face${theme === 'dark' ? ' selected' : ''}`}>Night</span>
           </button>
+
+          <button type="button" onClick={logout} className="glass-pill">Logout</button>
         </div>
       </div>
     </nav>

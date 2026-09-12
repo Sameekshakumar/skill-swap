@@ -1,23 +1,10 @@
 /* --- Color Palette Variables --- */
-:root {
-  --bg-color: #9DBEBB;
-  --card-bg-color: #FFFFFF;
-  --primary-text: #031926;
-  --secondary-text: #468189;
-  --accent-color: #77ACA2;
-  --accent-light: #F0F5F4; /* A lighter version of accent for tags */
-  --input-bg: #F4E9CD;
-  --button-bg: #031926;
-  --button-text: #FFFFFF;
-  --border-color: #E5E7EB; /* A light border color */
-}
-
 /* --- General Page Styling --- */
 .profile-page-container {
   min-height: 100vh;
   width: 100vw;
   background-color: var(--bg-color);
-  padding: 2rem;
+  padding: 0 2rem 3rem;
   box-sizing: border-box;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: var(--primary-text);
@@ -30,88 +17,11 @@
 }
 
 .profile-page-content {
-  max-width: 64rem; /* 1024px */
+  max-width: 72rem; /* 1024px */
   margin: 0 auto;
 }
 
 /* --- Header --- */
-.profile-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 2rem;
-  margin-left: 0;
-  margin-right: 0;
-  padding-left: 0;
-  padding-right: 0;
-  gap: 2rem;
-}
-
-.profile-page-container .header-title {
-  display: flex;
-  flex-direction: column;
-  align-self: center;
-}
-
-.profile-page-container .header-title h1 {
-  font-size: 2rem;
-  font-weight: 600;
-  color: #022f49 !important;
-  margin: 0;
-}
-
-.profile-page-container .header-title p {
-  font-size: 1rem;
-  color: var(--secondary-text);
-  margin-top: 0.5rem;
-  margin-bottom: 0;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-shrink: 0;
-}
-
-.header-btn, .credit-balance-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-decoration: none;
-}
-
-.profile-page-container .credit-balance-btn {
-  background-color: #022f49 !important;
-  color: #FFFFFF !important;
-  cursor: default !important;
-}
-
-.profile-page-container .credit-balance-btn .credit-amount {
-  color: #FFFFFF !important;
-  font-weight: 600;
-  font-size: 1rem;
-  margin-left: 0.25rem;
-}
-
-.profile-page-container .header-btn {
-  background-color: var(--card-bg-color) !important;
-  color: #022f49 !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.header-btn:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
-}
-
 /* --- General Card Styling --- */
 .profile-card {
   background-color: var(--card-bg-color);
@@ -152,7 +62,7 @@
 }
 
 .edit-btn:hover, .add-skill-btn:hover {
-  background-color: #f9f9f9;
+  background-color: var(--accent-light);
   border-color: var(--secondary-text);
 }
 
@@ -182,7 +92,7 @@
 }
 
 .save-btn:hover {
-  background-color: #1a1a1a;
+  background-color: var(--primary-text);
 }
 
 .cancel-btn {
@@ -191,7 +101,7 @@
 }
 
 .cancel-btn:hover {
-  background-color: #f9f9f9;
+  background-color: var(--accent-light);
   border-color: var(--secondary-text);
 }
 
@@ -231,8 +141,8 @@
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background-color: #022f49;
-  color: var(--button-text);
+  background-color: var(--accent-color);
+  color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -346,7 +256,7 @@
   font-weight: 500;
   padding: 0.4rem 0.8rem;
   border-radius: 8px;
-  background-color: #f3f4f6;
+  background-color: var(--accent-light);
   color: var(--primary-text);
   display: flex;
   align-items: center;
@@ -490,7 +400,7 @@
 }
 
 .modal-btn-cancel {
-  background-color: #f3f4f6;
+  background-color: var(--accent-light);
   color: var(--primary-text);
 }
 

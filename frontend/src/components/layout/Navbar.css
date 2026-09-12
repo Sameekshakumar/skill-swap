@@ -1,0 +1,146 @@
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.navbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  height: 4rem;
+  width: 100%;
+  padding: 0 1.25rem;
+  box-sizing: border-box;
+}
+
+.navbar-brand {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--nav-text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Shared frosted pill used by links, the credit badge and the theme switch. */
+.glass-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  box-shadow: var(--glass-shadow);
+  color: var(--nav-text);
+  font-size: 0.875rem;
+  font-weight: 550;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+  white-space: nowrap;
+}
+
+.glass-pill:hover {
+  background-color: var(--glass-bg-hover);
+}
+
+.glass-pill:active {
+  transform: translateY(1px);
+}
+
+.nav-link.active {
+  background-color: var(--glass-strong-bg);
+  border-color: transparent;
+  color: var(--glass-strong-text);
+}
+
+.credit-pill {
+  background-color: var(--glass-strong-bg);
+  border-color: transparent;
+  color: var(--glass-strong-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.credit-pill .credit-amount {
+  font-weight: 700;
+}
+
+/* Two-state switch: the knob slides across a frosted track. */
+.theme-switch {
+  position: relative;
+  width: 7.5rem;
+  padding: 0.3rem;
+  border-radius: 999px;
+  display: inline-flex;
+  gap: 0;
+}
+
+.theme-switch-knob {
+  position: absolute;
+  top: 0.3rem;
+  left: 0.3rem;
+  width: calc(50% - 0.3rem);
+  height: calc(100% - 0.6rem);
+  border-radius: 999px;
+  background-color: var(--glass-strong-bg);
+  transition: transform 0.22s ease;
+}
+
+:root[data-theme='dark'] .theme-switch-knob {
+  transform: translateX(100%);
+}
+
+.theme-switch-face {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 50%;
+  display: grid;
+  place-items: center;
+  height: 1.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--nav-text);
+  transition: color 0.22s ease;
+}
+
+.theme-switch-face.selected {
+  color: var(--glass-strong-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-pill,
+  .theme-switch-knob {
+    transition: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar-inner {
+    height: auto;
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .navbar-actions {
+    justify-content: flex-start;
+  }
+}
