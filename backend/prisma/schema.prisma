@@ -36,7 +36,11 @@ enum TransactionType {
 model User {
   id            String   @id @default(uuid())
   email         String   @unique
-  password      String
+  // Identity comes from Google; the app stores no passwords. Nullable so that
+  // accounts created before Google sign-in survive — the first Google login
+  // matches them by email and fills this in.
+  googleId      String?  @unique
+  avatarUrl     String?
   name          String
   college       String?
   yearOfStudy   String?

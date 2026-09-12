@@ -1,0 +1,104 @@
+.teacher-page-container {
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  padding: 0 0 3rem;
+}
+
+.teacher-card {
+  background-color: var(--card-bg-color);
+  border-radius: 12px;
+  padding: 1.75rem 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(3, 25, 38, 0.08);
+}
+
+.teacher-identity {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.teacher-avatar {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.teacher-avatar-initials {
+  display: grid;
+  place-items: center;
+  background-color: var(--accent-color);
+  color: #FFFFFF;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.teacher-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.teacher-rating {
+  margin: 0;
+  font-weight: 600;
+  color: var(--primary-text);
+}
+
+.teacher-bio {
+  margin: 0;
+  color: var(--secondary-text);
+  line-height: 1.5;
+}
+
+.teacher-section-title {
+  font-size: 1.15rem;
+  font-weight: 650;
+  color: var(--primary-text);
+  margin: 0 0 1.25rem;
+}
+
+.teacher-skills {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.teacher-skill {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1.1rem;
+}
+
+.teacher-skill h3 {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--primary-text);
+}
+
+.teacher-skill-tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.7rem;
+}
+
+.teacher-skill-description {
+  margin: 0;
+  color: var(--secondary-text);
+  font-size: 0.925rem;
+  line-height: 1.5;
+}
+
+.teacher-status {
+  color: var(--secondary-text);
+  padding: 1rem 0;
+}
+
+.teacher-back {
+  color: var(--accent-color);
+  font-weight: 600;
+}

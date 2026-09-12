@@ -24,9 +24,14 @@ Frontend calls relative `/api`; Vite proxies to `localhost:5001` (`frontend/vite
 
 ## Backend
 
-- Auth: JWT in `Authorization: Bearer <token>`, signed in `routes/auth.js`, verified in
-  `middleware/auth.js` which puts `{ id, email, name, creditBalance }` on `req.user`. 24h expiry.
-- Passwords: bcrypt, hashed explicitly at the call site.
+- Auth: **Google sign-in only — the app stores no passwords.** The browser gets an ID token
+  from Google and posts it to `POST /api/auth/google`, which verifies it with
+  `google-auth-library` and issues our own JWT (24h). `middleware/auth.js` verifies that JWT
+  and puts `{ id, email, name, creditBalance }` on `req.user`.
+- A Google account is matched by `googleId`, falling back to `email` so an account created
+  before Google sign-in is adopted rather than duplicated.
+- `GOOGLE_CLIENT_ID` (backend) and `VITE_GOOGLE_CLIENT_ID` (frontend) must match. Both are
+  public identifiers, not secrets.
 - Validation: `express-validator` `check()` arrays inline in route definitions.
 - Routes mounted in `server.js`: `/api/auth`, `/api/bookings`, `/api/users`, `/api/profile`, `/api/reviews`.
   `/api/users` now has exactly one endpoint, `GET /teachers/search` — the CRUD endpoints under it
@@ -69,6 +74,12 @@ npx prisma migrate dev --name <name>
 This needs the **session pooler** URL. It does not work over the direct
 `db.<ref>.supabase.co` host — see below.
 
+**Never pass the live database as `--shadow-database-url`.** Prisma resets whatever it is
+given as a shadow database; pointing it at `DATABASE_URL` drops every table and wipes the
+migration history. If `migrate dev` cannot prompt (a non-interactive shell) and refuses
+because a column drop loses data, generate the SQL with `migrate diff --from-migrations ...
+--to-schema-datamodel ...` and no shadow flag, then `migrate deploy`.
+
 ### Supabase connection
 
 Use the session pooler URI (Dashboard → Connect → Session mode), currently
@@ -101,6 +112,8 @@ over the direct connection.
 - `.glass-pill` is the frosted navbar control — used by links, the credit badge and the
   theme switch.
 - **No emoji in the UI.** They were removed pending real icons; don't reintroduce them.
+- **No `alert` or `confirm`.** `FeedbackContext` provides `notify(message, tone)` and an
+  awaitable `confirm(message, label)`; both render in-page instead of blocking it.
 - The credit balance lives in `AuthContext` and renders once in the navbar. After anything
   that moves credits, call `refreshUser()` rather than tracking a local copy.
 
@@ -144,8 +157,21 @@ The booking price comes from the teacher's `Skill` row when one matches, not fro
 client's `creditsPerHour`. The submitted value is only a fallback for a skill with no row,
 and is range-checked. Tighten to a hard 400 if every booking should require a real skill.
 
+### Search
+
+`GET /api/users/teachers/search` filters and pages **in the database** — `query`, `level`,
+`maxRate`, `minRating`, `page`, `limit`, returning `{ results, total, page, hasMore }`. The
+page previously fetched a fixed slice and filtered it in the browser, which silently hid
+results past the slice. Don't reintroduce client-side filtering; this is the code path
+vector search will replace.
+
+Your own listings are excluded server side — you cannot book yourself.
+
 ### Checks
 
 `backend/smoke-*.js` — run against a live server. `npm run dev`, then
-`cd backend && for f in smoke-*.js; do node $f || break; done`. They create `smoke-*@example.com`
-users; clear them with a `deleteMany` on that email prefix.
+`cd backend && for f in smoke-*.js; do node $f || break; done`.
+
+`smoke-helpers.js` holds the shared `call`/`newUser`/`cleanup`. Tests cannot sign in through
+Google, so `newUser` inserts a user directly and mints the same JWT the server would issue.
+Each suite deletes its own `smoke-*@example.com` rows on the way out, pass or fail.

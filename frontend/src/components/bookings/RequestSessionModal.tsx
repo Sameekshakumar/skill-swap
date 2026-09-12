@@ -26,11 +26,13 @@ export default function RequestSessionModal({ teacher, onClose, onSubmit }: Requ
   const [dateTime, setDateTime] = useState('');
   const [duration, setDuration] = useState(1);
   const [notes, setNotes] = useState('');
+  const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     if (!dateTime) {
-      alert('Please select a date and time');
+      setError('Please select a date and time');
       return;
     }
 

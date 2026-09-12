@@ -1,37 +1,12 @@
 // Smoke test for the Prisma-backed profile routes.
 // Run with the server up: node smoke-profile.js
 const assert = require('assert');
-
-const BASE = `http://localhost:${process.env.PORT || 5001}/api`;
-
-const call = async (method, path, { token, body } = {}) => {
-  const res = await fetch(BASE + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    },
-    ...(body ? { body: JSON.stringify(body) } : {})
-  });
-  const text = await res.text();
-  try {
-    return { status: res.status, body: JSON.parse(text) };
-  } catch {
-    return { status: res.status, body: text };
-  }
-};
-
-const newUser = async (tag) => {
-  const res = await call('POST', '/auth/register', {
-    body: { name: `Smoke ${tag}`, email: `smoke-${tag}-${Date.now()}@example.com`, password: 'secret123' }
-  });
-  assert.strictEqual(res.status, 201, `register ${tag}: ${JSON.stringify(res.body)}`);
-  return res.body.token;
-};
+const { call, newUser, finish, fail } = require('./smoke-helpers');
 
 (async () => {
-  const token = await newUser('owner');
+  const owner = await newUser('owner');
   const other = await newUser('other');
+  const token = owner.token;
 
   // GET /profile
   const initial = await call('GET', '/profile', { token });
@@ -79,7 +54,7 @@ const newUser = async (tag) => {
   assert.deepStrictEqual(twice.body, ['Rust'], 'skillsToLearn is not a deduped string array');
 
   // A different user must not be able to delete this skill.
-  const attack = await call('DELETE', `/profile/skills/teach/${skillId}`, { token: other });
+  const attack = await call('DELETE', `/profile/skills/teach/${skillId}`, { token: other.token });
   assert.strictEqual(attack.status, 200);
   const stillThere = await call('GET', '/profile', { token });
   assert.strictEqual(stillThere.body.skillsToTeach.length, 1, 'another user deleted the skill');
@@ -93,9 +68,5 @@ const newUser = async (tag) => {
 
   const noAuth = await call('GET', '/profile');
   assert.strictEqual(noAuth.status, 401, 'profile is reachable without a token');
-
-  console.log('profile smoke test passed');
-})().catch((err) => {
-  console.error(err.message);
-  process.exit(1);
-});
+  await finish('profile');
+})().catch(fail);

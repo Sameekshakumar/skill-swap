@@ -1,0 +1,99 @@
+.welcome-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-color);
+  padding: 2rem 1rem;
+}
+
+.welcome-box {
+  width: 100%;
+  max-width: 30rem;
+  background-color: var(--card-bg-color);
+  border-radius: 12px;
+  padding: 2.5rem;
+  box-shadow: 0 10px 30px rgba(3, 25, 38, 0.12);
+}
+
+.welcome-title {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--primary-text);
+  margin: 0 0 0.5rem;
+}
+
+.welcome-subtitle {
+  color: var(--secondary-text);
+  margin: 0 0 1.75rem;
+  line-height: 1.5;
+}
+
+.welcome-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary-text);
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--secondary-text);
+}
+
+.welcome-input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--primary-text);
+  background-color: var(--input-bg);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.welcome-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.welcome-textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.welcome-button {
+  padding: 0.9rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--button-text);
+  background-color: var(--button-bg);
+  border-radius: 8px;
+  transition: opacity 0.2s ease;
+}
+
+.welcome-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  background-color: var(--amber-light);
+  color: var(--amber-accent);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}

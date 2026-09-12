@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
 import RequestSessionModal from '../components/bookings/RequestSessionModal';
 import axios from '../utils/axios';
 import { handleApiError } from '../utils/helpers';
@@ -19,12 +20,15 @@ interface Teacher {
   reviews: number;
   bio: string;
   imageUrl: string;
-  available: boolean;
 }
 
 export default function SearchPage() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
@@ -33,53 +37,75 @@ export default function SearchPage() {
   const [filters, setFilters] = useState({
     skillLevel: 'all',
     creditRate: 'all',
-    availability: 'all',
     minRating: 'all'
   });
-  const { user, token, refreshUser } = useAuth();
-  const navigate = useNavigate();
+  const { refreshUser } = useAuth();
+  const { notify } = useFeedback();
 
+  const toTeacher = (row: any): Teacher => ({
+    id: row.teacherId,
+    skillId: row.skillId,
+    name: row.teacherName,
+    university: row.teacherCollege || 'Unknown',
+    year: row.teacherYear || '',
+    skill: row.skillName,
+    proficiency: row.level,
+    creditRate: row.creditsPerHour,
+    rating: row.teacherRating || 0,
+    reviews: row.teacherReviews || 0,
+    bio: row.description || row.teacherBio || 'No description available',
+    imageUrl: row.teacherAvatar
+      || `https://ui-avatars.com/api/?name=${encodeURIComponent(row.teacherName)}&background=022f49&color=fff&size=150`
+  });
+
+  const buildParams = (nextPage: number) => {
+    const params: Record<string, string> = { page: String(nextPage) };
+    if (searchQuery.trim()) params.query = searchQuery.trim();
+    if (filters.skillLevel !== 'all') params.level = filters.skillLevel;
+    if (filters.creditRate !== 'all') params.maxRate = filters.creditRate;
+    if (filters.minRating !== 'all') params.minRating = filters.minRating;
+    return params;
+  };
+
+  // The search text is debounced so typing does not fire a request per keystroke.
   useEffect(() => {
-    const fetchTeachers = async () => {
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      setLoadError('');
       try {
-        const response = await axios.get('/users/teachers/search');
-        // One row per skill offered. Your own listings are dropped: you cannot
-        // book yourself, so showing them would only produce a failed request.
-        const realTeachers = response.data
-          .filter((skill: any) => skill.teacherId !== user?.id)
-          .map((skill: any) => ({
-            id: skill.teacherId,
-            skillId: skill.skillId,
-            name: skill.teacherName,
-            university: skill.teacherCollege || 'Unknown',
-            year: skill.teacherYear || '',
-            skill: skill.skillName,
-            proficiency: skill.level,
-            creditRate: skill.creditsPerHour,
-            rating: skill.teacherRating || 0,
-            reviews: skill.teacherReviews || 0,
-            bio: skill.description || skill.teacherBio || 'No description available',
-            imageUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(skill.teacherName)}&background=022f49&color=fff&size=150`,
-            available: true
-          }));
-        setTeachers(realTeachers);
+        const response = await axios.get('/users/teachers/search', { params: buildParams(1) });
+        setTeachers(response.data.results.map(toTeacher));
+        setTotal(response.data.total);
+        setHasMore(response.data.hasMore);
+        setPage(1);
       } catch (error) {
         setLoadError(handleApiError(error));
       } finally {
         setLoading(false);
       }
-    };
+    }, 300);
 
-    fetchTeachers();
-  }, [user?.id]);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, filters.skillLevel, filters.creditRate, filters.minRating]);
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    try {
+      const response = await axios.get('/users/teachers/search', { params: buildParams(page + 1) });
+      setTeachers((current) => [...current, ...response.data.results.map(toTeacher)]);
+      setHasMore(response.data.hasMore);
+      setPage((current) => current + 1);
+    } catch (error) {
+      notify(handleApiError(error), 'error');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const handleRequestSession = async (requestData: { teacherId: string; skillId: string; skill: string; dateTime: string; duration: number; notes: string; creditsPerHour: number }) => {
     setIsRequesting(true);
     try {
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
-      
       await axios.post('/bookings', {
         teacherId: requestData.teacherId,
         skillId: requestData.skillId,
@@ -88,34 +114,21 @@ export default function SearchPage() {
         duration: requestData.duration,
         notes: requestData.notes,
         creditsPerHour: requestData.creditsPerHour
-      }, config);
+      });
 
       // Refresh credit balance after successful booking
       await refreshUser();
 
       setIsRequestModalOpen(false);
       setSelectedTeacher(null);
-      alert('Session request sent successfully!');
+      notify('Session request sent.');
     } catch (error: any) {
       console.error('Error requesting session:', error);
-      alert(handleApiError(error));
+      notify(handleApiError(error), 'error');
     } finally {
       setIsRequesting(false);
     }
   };
-
-  const filteredTeachers = teachers.filter(teacher => {
-    const matchesSearch = teacher.skill.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         teacher.bio.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesLevel = filters.skillLevel === 'all' || teacher.proficiency.toLowerCase() === filters.skillLevel;
-    const matchesRate = filters.creditRate === 'all' || teacher.creditRate <= parseInt(filters.creditRate);
-    const matchesAvailability = filters.availability === 'all' || teacher.available;
-    const matchesRating = filters.minRating === 'all' || teacher.rating >= parseFloat(filters.minRating);
-
-    return matchesSearch && matchesLevel && matchesRate && matchesAvailability && matchesRating;
-  });
 
   return (
     <div className="discover-page-container">
@@ -170,15 +183,6 @@ export default function SearchPage() {
               </select>
               
               <select
-                value={filters.availability}
-                onChange={(e) => setFilters({...filters, availability: e.target.value})}
-                className="filter-select"
-              >
-                <option value="all">All</option>
-                <option value="available">Available</option>
-              </select>
-              
-              <select
                 value={filters.minRating}
                 onChange={(e) => setFilters({...filters, minRating: e.target.value})}
                 className="filter-select"
@@ -193,7 +197,7 @@ export default function SearchPage() {
 
           {/* Results Count */}
           <div className="results-count">
-            Showing {filteredTeachers.length} results
+            Showing {teachers.length} of {total} {total === 1 ? 'result' : 'results'}
           </div>
 
           {/* Teacher Cards */}
@@ -202,14 +206,14 @@ export default function SearchPage() {
               <div className="loading">Loading...</div>
             ) : loadError ? (
               <div className="loading">{loadError}</div>
-            ) : filteredTeachers.length === 0 ? (
+            ) : teachers.length === 0 ? (
               <div className="loading">
                 {teachers.length === 0
                   ? 'Nobody is offering skills yet. Add one on your profile to be the first.'
                   : 'No teachers match your search.'}
               </div>
             ) : (
-              filteredTeachers.map((teacher) => (
+              teachers.map((teacher) => (
                 <div key={teacher.skillId} className="teacher-card">
                   <div className="card-header">
                     <div className="teacher-info">
@@ -219,13 +223,11 @@ export default function SearchPage() {
                         className="teacher-avatar"
                       />
                       <div className="teacher-details">
-                        <h3 className="teacher-name">{teacher.name}</h3>
+                        <Link to={`/teachers/${teacher.id}`} className="teacher-name-link">
+                          <h3 className="teacher-name">{teacher.name}</h3>
+                        </Link>
                         <p className="teacher-university">{teacher.university} • {teacher.year}</p>
                       </div>
-                    </div>
-                    <div className="availability-tag">
-                      
-                      <span>Available</span>
                     </div>
                   </div>
                   
@@ -253,12 +255,6 @@ export default function SearchPage() {
                   <button 
                     className="request-session-btn"
                     onClick={() => {
-                      // Check if this is a mock teacher (IDs like '1', '2', '3', etc.)
-                      const isMockTeacher = /^[1-9]\d*$/.test(teacher.id);
-                      if (isMockTeacher) {
-                        alert('These are demo teachers. To request sessions with real teachers, please add teaching skills to user profiles in the system.');
-                        return;
-                      }
                       setSelectedTeacher(teacher);
                       setIsRequestModalOpen(true);
                     }}
@@ -269,6 +265,19 @@ export default function SearchPage() {
               ))
             )}
           </div>
+
+          {hasMore && (
+            <div className="load-more-row">
+              <button
+                type="button"
+                className="load-more-btn"
+                onClick={loadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? 'Loading…' : 'Show more teachers'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

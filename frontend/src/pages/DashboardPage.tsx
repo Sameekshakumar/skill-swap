@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
 import axios from '../utils/axios';
 import { handleApiError } from '../utils/helpers';
 import PendingReviews from '../components/reviews/PendingReviews';
@@ -23,6 +24,7 @@ interface Booking {
 
 export default function DashboardPage() {
   const { user, token, refreshUser } = useAuth();
+  const { notify, confirm } = useFeedback();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('requests');
   
@@ -74,41 +76,41 @@ export default function DashboardPage() {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       await axios.post(`/bookings/${bookingId}/accept`, {}, config);
       await fetchBookings();
-      alert('Session request accepted!');
+      notify('Session request accepted.');
     } catch (error) {
-      alert(handleApiError(error));
+      notify(handleApiError(error), 'error');
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleReject = async (bookingId: string) => {
-    if (!window.confirm('Are you sure you want to reject this session request?')) return;
+    if (!(await confirm('Reject this session request? The learner gets their credits back.', 'Reject'))) return;
     
     setActionLoading(bookingId);
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       await axios.post(`/bookings/${bookingId}/reject`, {}, config);
       await fetchBookings();
-      alert('Session request rejected.');
+      notify('Session request rejected and credits refunded.');
     } catch (error) {
-      alert(handleApiError(error));
+      notify(handleApiError(error), 'error');
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleCancel = async (bookingId: string) => {
-    if (!window.confirm('Are you sure you want to cancel this session?')) return;
+    if (!(await confirm('Cancel this session? Your credits will be refunded.', 'Cancel session'))) return;
     
     setActionLoading(bookingId);
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       await axios.post(`/bookings/${bookingId}/cancel`, {}, config);
       await fetchBookings(); // This will refresh credit balance
-      alert('Session cancelled. Credits refunded.');
+      notify('Session cancelled and credits refunded.');
     } catch (error) {
-      alert(handleApiError(error));
+      notify(handleApiError(error), 'error');
     } finally {
       setActionLoading(null);
     }
@@ -120,9 +122,9 @@ export default function DashboardPage() {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       await axios.post(`/bookings/${bookingId}/complete`, { completedBy }, config);
       await fetchBookings(); // This will refresh credit balance
-      alert('Session completion status updated.');
+      notify('Marked complete. Credits transfer once you both confirm.');
     } catch (error) {
-      alert(handleApiError(error));
+      notify(handleApiError(error), 'error');
     } finally {
       setActionLoading(null);
     }
