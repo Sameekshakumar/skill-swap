@@ -29,7 +29,8 @@ const newUser = async (tag) => {
   return { token: res.body.token, id: res.body.user.id };
 };
 
-const rating = async (id, token) => (await call('GET', `/users/${id}`, { token })).body;
+// GET /users/:id was removed, so read the aggregate from the user's own profile.
+const rating = async (token) => (await call('GET', '/profile', { token })).body;
 
 // Drive a booking all the way to Completed so it becomes reviewable.
 const completedBooking = async (teacher, learner) => {
@@ -87,20 +88,20 @@ const completedBooking = async (teacher, learner) => {
   assert.strictEqual(first.status, 201, JSON.stringify(first.body));
   assert.strictEqual(first.body.review.skill, skill, 'the skill was not copied off the booking');
   assert.strictEqual(first.body.review.comment, 'Great', 'the comment was not trimmed');
-  let t = await rating(teacher.id, learner.token);
+  let t = await rating(teacher.token);
   assert.strictEqual(t.rating, 4, 'rating did not update');
   assert.strictEqual(t.reviewCount, 1, 'reviewCount did not update');
 
   // The same reviewer cannot review the same booking twice.
   const dupe = await call('POST', '/reviews', { token: learner.token, body: { bookingId, rating: 1 } });
   assert.strictEqual(dupe.status, 400, 'a duplicate review was accepted');
-  t = await rating(teacher.id, learner.token);
+  t = await rating(teacher.token);
   assert.strictEqual(t.reviewCount, 1, 'a rejected duplicate still moved the aggregate');
 
   // The teacher reviews the learner off the same booking — separate direction.
   const back = await call('POST', '/reviews', { token: teacher.token, body: { bookingId, rating: 5 } });
   assert.strictEqual(back.status, 201, JSON.stringify(back.body));
-  const l = await rating(learner.id, teacher.token);
+  const l = await rating(learner.token);
   assert.strictEqual(l.rating, 5);
   assert.strictEqual(l.reviewCount, 1);
 
@@ -108,14 +109,14 @@ const completedBooking = async (teacher, learner) => {
   const learner2 = await newUser('rev-learner2');
   const second = await completedBooking(teacher, learner2);
   await call('POST', '/reviews', { token: learner2.token, body: { bookingId: second.id, rating: 5 } });
-  t = await rating(teacher.id, learner.token);
+  t = await rating(teacher.token);
   assert.strictEqual(t.reviewCount, 2);
   assert.strictEqual(t.rating, 4.5, `average of 4 and 5 should be 4.5, got ${t.rating}`);
 
   const learner3 = await newUser('rev-learner3');
   const third = await completedBooking(teacher, learner3);
   await call('POST', '/reviews', { token: learner3.token, body: { bookingId: third.id, rating: 5 } });
-  t = await rating(teacher.id, learner.token);
+  t = await rating(teacher.token);
   assert.strictEqual(t.reviewCount, 3);
   assert.strictEqual(t.rating, 4.7, `average of 4,5,5 should round to 4.7, got ${t.rating}`);
 

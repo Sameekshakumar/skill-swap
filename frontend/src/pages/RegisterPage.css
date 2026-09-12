@@ -117,3 +117,29 @@
 .login-link:hover {
   opacity: 0.8;
 }
+/* College and year of study have no leading icon, so they keep normal padding.
+   The select also needs an explicit text colour — it does not inherit one. */
+.input-field.no-icon {
+  padding-left: 1rem;
+  color: #022f49;
+}
+
+select.input-field {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #666 50%),
+                    linear-gradient(135deg, #666 50%, transparent 50%);
+  background-position: calc(100% - 1.15rem) 55%, calc(100% - 0.85rem) 55%;
+  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+/* The "filled" highlight keys off :placeholder-shown, which a select never
+   matches, so drive it from the value being non-empty instead. */
+select.input-field:valid {
+  background-color: #77ACA2;
+}
+
+select.input-field:has(option[value='']:checked) {
+  background-color: #F4E9CD;
+}

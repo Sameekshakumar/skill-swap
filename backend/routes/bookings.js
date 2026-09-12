@@ -117,6 +117,9 @@ router.post('/', authenticateToken, async (req, res) => {
     if (Number.isNaN(when.getTime())) {
       return res.status(400).json({ error: 'Invalid dateTime' });
     }
+    if (when.getTime() <= Date.now()) {
+      return res.status(400).json({ error: 'Sessions must be scheduled in the future' });
+    }
 
     const hours = Number(duration || 1);
     if (!Number.isInteger(hours) || hours < 1) {
@@ -134,18 +137,16 @@ router.post('/', authenticateToken, async (req, res) => {
         throw new HttpError(404, 'Teacher not found. These are demo teachers that cannot receive session requests.');
       }
 
-      // The client sends a price, so take the teacher's own rate wherever we can
-      // find the matching skill and only fall back to the submitted value.
+      // The price comes from the teacher's own skill row, never from the
+      // request body — otherwise a learner could name their own rate.
       const offered = await tx.skill.findFirst({
         where: skillId ? { id: skillId, userId: teacherId } : { userId: teacherId, skillName: skill }
       });
-
-      const rate = offered ? offered.creditsPerHour : Number(creditsPerHour);
-      if (!Number.isInteger(rate) || rate < 1 || rate > 3) {
-        throw new HttpError(400, 'Credits per hour must be between 1 and 3');
+      if (!offered) {
+        throw new HttpError(400, 'That teacher does not offer this skill');
       }
 
-      const creditAmount = rate * hours;
+      const creditAmount = offered.creditsPerHour * hours;
 
       // Debit and balance check in one statement: a concurrent request cannot
       // slip between reading the balance and writing it.
@@ -374,18 +375,6 @@ router.post('/:id/complete', authenticateToken, async (req, res) => {
   } catch (error) {
     sendError(res, error, 'Error completing session');
   }
-});
-
-// Find and clean up orphaned bookings (where teacher doesn't exist)
-router.get('/cleanup-orphaned', authenticateToken, async (req, res) => {
-  // Booking.teacherId is a required foreign key and user deletes are restricted
-  // while bookings exist, so Postgres cannot produce an orphaned booking. Kept
-  // so the dashboard's existing call keeps working.
-  res.json({
-    message: 'Found and cleaned up 0 orphaned bookings',
-    creditsRefunded: 0,
-    refundedBookingIds: []
-  });
 });
 
 // Reset everything for a user - cancel all pending bookings and restore credits

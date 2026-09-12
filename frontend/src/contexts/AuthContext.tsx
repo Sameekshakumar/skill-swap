@@ -5,9 +5,15 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  // True until the saved token has been checked, so ProtectedRoute doesn't
+  // redirect to /login before the session has had a chance to restore.
+  loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
+  // Re-reads the profile so the navigation bar's credit count stays accurate
+  // after a booking, cancellation or completion.
+  refreshUser: () => Promise<void>;
 }
 
 interface User {
@@ -15,12 +21,16 @@ interface User {
   name: string;
   email: string;
   creditBalance: number;
+  college?: string;
+  yearOfStudy?: string;
 }
 
 interface RegisterData {
   name: string;
   email: string;
   password: string;
+  college?: string;
+  yearOfStudy?: string;
 }
 
 interface LoginResponse {
@@ -34,33 +44,38 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const isAuthenticated = Boolean(user && token);
 
   useEffect(() => {
     // Check for saved token on component mount
     const savedToken = localStorage.getItem('token');
-    if (savedToken) {
-      setToken(savedToken);
-      // Get user profile instead of /auth/me
-      axios.get('/profile', {
-        headers: { Authorization: `Bearer ${savedToken}` }
-      })
-        .then(response => {
-          setUser(response.data);
-        })
-        .catch(() => {
-          localStorage.removeItem('token');
-          setToken(null);
-        });
+    if (!savedToken) {
+      setLoading(false);
+      return;
     }
+
+    setToken(savedToken);
+    // Get user profile instead of /auth/me
+    axios.get('/profile', {
+      headers: { Authorization: `Bearer ${savedToken}` }
+    })
+      .then((response: { data: User }) => {
+        setUser(response.data);
+      })
+      .catch(() => {
+        localStorage.removeItem('token');
+        setToken(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
     const login = async (email: string, password: string) => {
     try {
-      console.log('Attempting login...');
   // FIX 3: Use correct endpoint path
   const response = await axios.post('/auth/login', { email, password });
-  console.log('Login response:', response?.data);
   const { user, token } = response?.data as LoginResponse;
       setUser(user);
       setToken(token);
@@ -74,10 +89,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (userData: RegisterData) => {
     try {
-      console.log('Attempting registration with:', userData);
   // FIX 4: Use correct endpoint path
   const response = await axios.post('/auth/register', userData);
-  console.log('Registration response:', response?.data);
   const { user, token } = response?.data as LoginResponse;
       setUser(user);
       setToken(token);
@@ -89,6 +102,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const response = await axios.get('/profile');
+      setUser(response.data as User);
+    } catch {
+      // A failed refresh should not sign the user out; the next call will retry.
+    }
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -97,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

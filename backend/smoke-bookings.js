@@ -102,12 +102,20 @@ const request = (learner, teacherId, skill, extra = {}) =>
   assert.strictEqual((await call('POST', `/bookings/${b3.body.id}/reject`, { token: teacher.token })).status, 400);
   assert.strictEqual(await credits(l3.token), 10, 'rejecting twice refunded twice');
 
-  // --- the client-supplied price must not undercut the teacher's rate ---
+  // --- the client-supplied price is ignored entirely ---
   const l4 = await newUser('cheapskate');
   const underpaid = await request(l4, teacher.id, 'Guitar', { creditsPerHour: 1 });
   assert.strictEqual(underpaid.body.creditAmount, 4, 'the client set its own price');
-  assert.strictEqual((await request(l4, teacher.id, 'Guitar', { creditsPerHour: 0 })).status, 400,
-    'a zero rate for an unknown skill was accepted');
+  // A skill the teacher does not offer cannot be booked at any price.
+  const notOffered = await request(l4, teacher.id, 'Underwater Basket Weaving');
+  assert.strictEqual(notOffered.status, 400, 'booked a skill the teacher does not teach');
+
+  // --- sessions must be in the future ---
+  const past = await call('POST', '/bookings', {
+    token: l4.token,
+    body: { teacherId: teacher.id, skill: 'Guitar', dateTime: new Date(Date.now() - 86400000).toISOString(), duration: 1, creditsPerHour: 2 }
+  });
+  assert.strictEqual(past.status, 400, 'a session was booked in the past');
 
   // --- guards ---
   const broke = await newUser('broke');
@@ -132,8 +140,8 @@ const request = (learner, teacherId, skill, extra = {}) =>
   assert.ok(mine.body.some((b) => b.id === id), 'the booking is missing from GET /bookings');
   const completed = await call('GET', '/bookings/completed', { token: teacher.token });
   assert.ok(completed.body.some((b) => b.id === id), 'the completed session is missing');
-  const orphans = await call('GET', '/bookings/cleanup-orphaned', { token: learner.token });
-  assert.strictEqual(orphans.body.creditsRefunded, 0);
+  assert.strictEqual((await call('GET', '/bookings/cleanup-orphaned', { token: learner.token })).status, 404,
+    'the retired cleanup endpoint still exists');
 
   console.log('bookings smoke test passed');
 })().catch((err) => {

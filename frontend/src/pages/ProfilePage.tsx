@@ -49,8 +49,8 @@ const AddSkillModal = ({ modalType, onClose, onSubmit }: ModalProps) => {
       return;
     }
 
-    if (modalType === 'teach' && (!formData.level || !formData.creditsPerHour)) {
-      setError('All fields are required for teaching skills');
+    if (modalType === 'teach' && (!formData.level || !formData.creditsPerHour || !formData.description?.trim())) {
+      setError('Level, credits per hour and a description are required for teaching skills');
       return;
     }
 
@@ -167,7 +167,7 @@ const ProfilePage = () => {
     yearOfStudy: '',
     bio: ''
   });
-  const { user, token, logout } = useAuth();
+  const { user, token, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -299,27 +299,9 @@ const ProfilePage = () => {
   return (
     <div className="profile-page-container">
       <div className="profile-page-content">
-        <div className="profile-header">
-          <div className="header-title">
-            <h1>My Profile</h1>
-            <p>Manage your teaching and learning journey</p>
-          </div>
-
-          <div className="header-actions">
-            <div className="credit-balance-btn">
-              <span>Credit Balance: </span>
-              <span className="credit-amount">{profile.creditBalance}</span>
-            </div>
-            <Link to="/" className="header-btn">
-              <span>Discover Skills</span>
-            </Link>
-            <Link to="/dashboard" className="header-btn">
-              <span>My Sessions</span>
-            </Link>
-            <button onClick={logout} className="header-btn">
-              <span>Logout</span>
-            </button>
-          </div>
+        <div className="page-heading">
+          <h1>My Profile</h1>
+          <p>Manage your teaching and learning journey</p>
         </div>
 
         <div className="profile-card">
@@ -411,8 +393,7 @@ const ProfilePage = () => {
         <div className="profile-card">
           <div className="profile-card-header">
             <h2 className="skills-card-title">
-              <span>🎓</span>
-              <span>Skills I Can Teach</span>
+                            <span>Skills I Can Teach</span>
             </h2>
             <button 
               className="add-skill-btn"
@@ -440,8 +421,7 @@ const ProfilePage = () => {
                 <div className="skill-item-details">
                   <span className="skill-tag">{skill.level}</span>
                   <span className="skill-tag credits">
-                    <span>⏰</span>
-                    <span>{skill.creditsPerHour} credits/hr</span>
+                                        <span>{skill.creditsPerHour} credits/hr</span>
                   </span>
                 </div>
                 <p className="skill-description">{skill.description}</p>
@@ -453,8 +433,7 @@ const ProfilePage = () => {
         <div className="profile-card">
           <div className="profile-card-header">
             <h2 className="skills-card-title">
-              <span>📚</span>
-              <span>Skills I Want to Learn</span>
+                            <span>Skills I Want to Learn</span>
             </h2>
             <button 
               className="add-skill-btn"

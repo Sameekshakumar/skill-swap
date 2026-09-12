@@ -18,6 +18,7 @@ const publicUser = (user) => ({
   name: user.name,
   email: user.email,
   college: user.college,
+  yearOfStudy: user.yearOfStudy,
   creditBalance: user.creditBalance
 });
 
@@ -34,7 +35,7 @@ router.post('/register', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, password, college } = req.body;
+    const { name, email, password, college, yearOfStudy } = req.body;
 
     // Check if user already exists
     const existing = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
@@ -48,7 +49,8 @@ router.post('/register', [
         name: name.trim(),
         email: normalizeEmail(email),
         password: await bcrypt.hash(password, 10),
-        college: college?.trim()
+        college: college?.trim(),
+        yearOfStudy: yearOfStudy?.trim()
       }
     });
 

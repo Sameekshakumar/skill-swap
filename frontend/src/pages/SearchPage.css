@@ -1,27 +1,10 @@
 /* --- Color Palette Variables --- */
-:root {
-  --bg-color: #9DBEBB;
-  --card-bg-color: #FFFFFF;
-  --primary-text: #031926;
-  --secondary-text: #468189;
-  --accent-color: #77ACA2;
-  --accent-light: #F0F5F4;
-  --purple-accent: #8B5CF6;
-  --purple-light: #F3F0FF;
-  --green-accent: #10B981;
-  --green-light: #D1FAE5;
-  --input-bg: #F4E9CD;
-  --button-bg: #031926;
-  --button-text: #FFFFFF;
-  --border-color: #E5E7EB;
-}
-
 /* --- General Page Styling --- */
 .discover-page-container {
   min-height: 100vh;
   width: 100vw;
   background-color: var(--bg-color);
-  padding: 2rem;
+  padding: 0 2rem 3rem;
   box-sizing: border-box;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: var(--primary-text);
@@ -34,90 +17,11 @@
 }
 
 .discover-page-content {
-  max-width: 80rem;
+  max-width: 72rem;
   margin: 0 auto;
 }
 
 /* --- Header --- */
-.discover-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.header-left {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.header-title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.header-title h1 {
-  font-size: 2rem;
-  font-weight: 600;
-  color: #022f49;
-  margin: 0;
-}
-
-.compass-icon {
-  font-size: 1.5rem;
-}
-
-.header-subtitle {
-  font-size: 1rem;
-  color: var(--secondary-text);
-  margin: 0;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.credit-balance-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  background-color: #022f49;
-  color: var(--button-text);
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: default;
-  transition: all 0.2s ease;
-}
-
-.header-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  background-color: var(--card-bg-color);
-  color: var(--primary-text);
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-decoration: none;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.header-btn:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
-}
-
 /* --- Main Card --- */
 .discover-main-card {
   background-color: var(--card-bg-color);
@@ -137,17 +41,9 @@
   align-items: center;
 }
 
-.search-icon {
-  position: absolute;
-  left: 1rem;
-  font-size: 1.2rem;
-  color: var(--secondary-text);
-  z-index: 1;
-}
-
 .search-input {
   width: 100%;
-  padding: 0.8rem 1rem 0.8rem 3rem;
+  padding: 0.8rem 1rem;
   font-size: 1rem;
   border: 2px solid var(--border-color);
   border-radius: 8px;
@@ -158,7 +54,7 @@
 
 .search-input:focus {
   outline: none;
-  border-color: var(--purple-accent);
+  border-color: var(--accent-color);
 }
 
 /* --- Filters Section --- */
@@ -175,10 +71,6 @@
   margin-bottom: 1rem;
   font-weight: 600;
   color: var(--primary-text);
-}
-
-.filter-icon {
-  font-size: 1rem;
 }
 
 .filters-grid {
@@ -199,7 +91,7 @@
 
 .filter-select:focus {
   outline: none;
-  border-color: var(--purple-accent);
+  border-color: var(--accent-color);
 }
 
 /* --- Results Count --- */
@@ -332,14 +224,6 @@
   gap: 0.25rem;
 }
 
-.star {
-  font-size: 0.9rem;
-}
-
-.star.filled {
-  color: #FCD34D;
-}
-
 .rating-text {
   font-size: 0.9rem;
   color: var(--secondary-text);
@@ -350,7 +234,7 @@
 .request-session-btn {
   width: 100%;
   padding: 0.8rem 1rem;
-  background-color: #022f49;
+  background-color: var(--accent-color);
   color: var(--button-text);
   border: none;
   border-radius: 8px;
@@ -378,17 +262,6 @@
 @media (max-width: 768px) {
   .discover-page-container {
     padding: 1rem;
-  }
-  
-  .discover-header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
-  }
-  
-  .header-actions {
-    width: 100%;
-    justify-content: space-between;
   }
   
   .teachers-grid {

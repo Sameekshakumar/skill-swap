@@ -47,15 +47,7 @@ const ReviewsList = ({ userId, userName }: ReviewsListProps) => {
   }, [userId]);
 
   const renderStars = (rating: number) => {
-    return (
-      <div className="star-display">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <span key={star} className={`star ${rating >= star ? 'filled' : 'empty'}`}>
-            ⭐
-          </span>
-        ))}
-      </div>
-    );
+    return <div className="star-display">{rating} out of 5</div>;
   };
 
   if (loading) {

@@ -29,6 +29,8 @@ Frontend calls relative `/api`; Vite proxies to `localhost:5001` (`frontend/vite
 - Passwords: bcrypt, hashed explicitly at the call site.
 - Validation: `express-validator` `check()` arrays inline in route definitions.
 - Routes mounted in `server.js`: `/api/auth`, `/api/bookings`, `/api/users`, `/api/profile`, `/api/reviews`.
+  `/api/users` now has exactly one endpoint, `GET /teachers/search` — the CRUD endpoints under it
+  were unused and were removed.
 - Models live in `prisma/schema.prisma`: `User`, `Skill`, `SkillToLearn`, `Booking`,
   `Transaction`, `Review`. `creditBalance` defaults to 10.
 - `lib/httpError.js` — throw `HttpError(status, message)` inside a `$transaction` to roll it
@@ -86,16 +88,42 @@ over the direct connection.
 - `/api/auth/me` and `GET /profile` flatten `skillsToLearn` to a string array to match the
   old Mongo shape.
 
-### Known pre-existing bugs (not from the migration)
+### UI structure
 
-- `components/ProtectedRoute.tsx` redirects on `!isAuthenticated` with no loading state, but
-  `AuthContext` restores the session by fetching `/profile` asynchronously. Any hard refresh
-  of `/profile` or `/dashboard` bounces to `/login` before that resolves. Fix: a `loading`
-  flag in `AuthContext` that `ProtectedRoute` waits on.
-- `DashboardPage.tsx` uses `window.alert` / `window.confirm` for every action result. They
-  block the page and make browser automation hang.
-- `AuthContext.tsx:48` — implicit `any` on the axios `.then` callback. The only error under
-  `tsc --strict`; the project has no `tsconfig.json`, so nothing typechecks on build.
+- `components/layout/Layout.tsx` renders `Navbar` + `<Outlet/>` and wraps every signed-in
+  route. Pages must **not** draw their own header nav — they did, which is why "My Sessions"
+  vanished on the discover page.
+- All colour lives in `styles/theme.css`, keyed off `data-theme` on `<html>`. Page stylesheets
+  must not declare `:root` variables or raw hex; three of them did, which broke dark mode.
+  `ThemeContext` sets the attribute and persists the choice, defaulting to the OS setting.
+- `.page-shell` (72rem, 2rem padding) is the shared width. The navbar and every page use it,
+  so headings line up with the cards below them.
+- `.glass-pill` is the frosted navbar control — used by links, the credit badge and the
+  theme switch.
+- **No emoji in the UI.** They were removed pending real icons; don't reintroduce them.
+- The credit balance lives in `AuthContext` and renders once in the navbar. After anything
+  that moves credits, call `refreshUser()` rather than tracking a local copy.
+
+### Frontend rules
+
+- `AuthContext` exposes `loading`, true until the saved token has been checked. `ProtectedRoute`
+  renders nothing while it is true — without that, every hard refresh of a protected page
+  redirects to `/login` before the session finishes restoring.
+- Never log request bodies. An axios interceptor used to print every request, passwords included.
+- `/users/teachers/search` returns one row per skill, so `skillId` is the React key — `teacherId`
+  repeats for a teacher offering several skills.
+- The discover page shows only real teachers. It used to fall back to hardcoded mock teachers
+  whose ids matched nothing, so booking them failed with a confusing error.
+- `frontend/npm run build` typechecks first (`tsc --noEmit && vite build`). `npm run typecheck`
+  runs it alone.
+
+### Product rules worth keeping
+
+- **Sessions are booked in whole hours.** Credits are integers and pricing is per hour, so a
+  half-hour booking cannot produce a fair credit amount. The duration dropdown offers 1-3 hours.
+- **A booking's price always comes from the teacher's `Skill` row**, never the request body.
+  Booking a skill the teacher does not offer is a 400.
+- **Sessions must be scheduled in the future.**
 
 ### Credit rules (bookings.js)
 

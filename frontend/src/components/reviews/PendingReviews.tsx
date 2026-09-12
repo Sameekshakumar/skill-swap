@@ -59,7 +59,7 @@ const PendingReviews = ({ token }: PendingReviewsProps) => {
       <div className="pending-reviews-container">
         <div className="pending-reviews-header">
           <h3>
-            📝 Pending Reviews
+            Pending Reviews
             <span className="review-count">{pendingReviews.length}</span>
           </h3>
           <p className="pending-reviews-subtitle">

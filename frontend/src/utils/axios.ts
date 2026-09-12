@@ -10,17 +10,6 @@ const instance = axios.create({
   }
 });
 
-// Add logging for development
-instance.interceptors.request.use((request: any) => {
-  console.log('Starting Request:', {
-    url: request?.url,
-    method: request?.method,
-    data: request?.data,
-    headers: request?.headers
-  });
-  return request;
-});
-
 // Add request interceptor
 instance.interceptors.request.use(
   (config: any) => {
