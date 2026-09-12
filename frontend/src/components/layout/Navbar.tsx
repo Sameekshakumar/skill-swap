@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import nightModeIcon from '../../assets/night-mode.png';
 import './Navbar.css';
 
 const links = [
@@ -19,6 +20,23 @@ export default function Navbar() {
         <Link to="/" className="navbar-brand">Skill Swap</Link>
 
         <div className="navbar-actions">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="glass-pill theme-toggle"
+            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            aria-pressed={theme === 'dark'}
+            title={theme === 'light' ? 'Switch to night' : 'Switch to day'}
+          >
+            {/* A black PNG used as a mask, so the paint comes from the theme
+                rather than the image — one asset serves both modes. */}
+            <span
+              className="ppi-icon theme-toggle-icon"
+              style={{ ['--ppi-icon-src' as string]: `url(${nightModeIcon})` }}
+              aria-hidden="true"
+            />
+          </button>
+
           <span className="glass-pill credit-pill">
             <span className="credit-amount">{user?.creditBalance ?? 0}</span>
             <span>credits</span>
@@ -34,17 +52,6 @@ export default function Navbar() {
               {link.label}
             </NavLink>
           ))}
-
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="glass-pill theme-switch"
-            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-          >
-            <span className="theme-switch-knob" aria-hidden="true" />
-            <span className={`theme-switch-face${theme === 'light' ? ' selected' : ''}`}>Day</span>
-            <span className={`theme-switch-face${theme === 'dark' ? ' selected' : ''}`}>Night</span>
-          </button>
 
           <button type="button" onClick={logout} className="glass-pill">Logout</button>
         </div>

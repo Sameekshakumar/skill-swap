@@ -3,6 +3,10 @@ import { useEffect, useRef } from 'react';
 interface GoogleSignInButtonProps {
   onCredential: (credential: string) => void;
   onError: (message: string) => void;
+  // Only offer to sign someone straight back in if they asked to be
+  // remembered. After an explicit sign-out this is false, so logging out
+  // sticks instead of bouncing them back into the app.
+  autoSignIn: boolean;
 }
 
 // Google's script is loaded on demand and renders its own button into the div
@@ -36,7 +40,7 @@ const loadGoogleScript = () =>
     document.head.appendChild(script);
   });
 
-export default function GoogleSignInButton({ onCredential, onError }: GoogleSignInButtonProps) {
+export default function GoogleSignInButton({ onCredential, onError, autoSignIn }: GoogleSignInButtonProps) {
   const container = useRef<HTMLDivElement>(null);
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -55,11 +59,19 @@ export default function GoogleSignInButton({ onCredential, onError }: GoogleSign
         const google = (window as any).google;
         google.accounts.id.initialize({
           client_id: clientId,
+          auto_select: autoSignIn,
           callback: (response: { credential?: string }) => {
             if (response?.credential) onCredential(response.credential);
             else onError('Google did not return a sign-in token.');
           }
         });
+
+        // One Tap only appears for people who chose to be remembered.
+        if (autoSignIn) {
+          google.accounts.id.prompt();
+        } else {
+          google.accounts.id.disableAutoSelect();
+        }
 
         google.accounts.id.renderButton(container.current, {
           theme: 'outline',
@@ -79,7 +91,7 @@ export default function GoogleSignInButton({ onCredential, onError }: GoogleSign
     return () => {
       cancelled = true;
     };
-  }, [clientId, onCredential, onError]);
+  }, [clientId, onCredential, onError, autoSignIn]);
 
   return <div ref={container} className="google-button-slot" />;
 }

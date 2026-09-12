@@ -8,9 +8,10 @@
    active tab. Colour now comes from styles/theme.css. */
 
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  font-family: var(--ppi-font-body);
+  line-height: 1.6;
   font-weight: 400;
+  letter-spacing: -0.003em;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;

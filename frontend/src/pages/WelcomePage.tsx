@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import axios from '../utils/axios'
+import { AmbientBackground } from '../components/layout/AmbientBackground'
 import { handleApiError } from '../utils/helpers'
 import './WelcomePage.css'
 
@@ -42,6 +43,7 @@ export default function WelcomePage() {
 
   return (
     <div className="welcome-container">
+      <AmbientBackground />
       <div className="welcome-box">
         <h1 className="welcome-title">Welcome{user?.name ? `, ${user.name.split(' ')[0]}` : ''}</h1>
         <p className="welcome-subtitle">

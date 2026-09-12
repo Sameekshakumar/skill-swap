@@ -3,7 +3,6 @@
 .discover-page-container {
   min-height: 100vh;
   width: 100vw;
-  background-color: var(--bg-color);
   padding: 0 2rem 3rem;
   box-sizing: border-box;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

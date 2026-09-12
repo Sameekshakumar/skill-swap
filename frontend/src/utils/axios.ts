@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getToken } from './session';
 
 // Create axios instance with custom config
 // Use relative '/api' so Vite dev server proxy (configured in vite.config.js) can forward requests in dev
@@ -13,7 +14,7 @@ const instance = axios.create({
 // Add request interceptor
 instance.interceptors.request.use(
   (config: any) => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (token) {
       if (!config.headers) config.headers = {};
       config.headers.Authorization = `Bearer ${token}`;
