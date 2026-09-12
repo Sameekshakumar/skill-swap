@@ -1,15 +1,17 @@
 /* ============================================================================
-   PPI UI kit — portable stylesheet
+   Skill Swap design system
    ----------------------------------------------------------------------------
-   Plain CSS, no Tailwind, no build step. Import once at the app entry:
+   Plain CSS, no build step. Imported once from main.jsx:
 
-       import './ppi-ui.css';
+       import './styles/design-system.css';
 
    Dark mode is driven by data-theme on <html>, set by ThemeContext:
 
        document.documentElement.setAttribute('data-theme', 'dark');
 
-   Adapted from the kit, which used a `dark` class.
+   styles/theme.css maps the app's own variable names onto the tokens below.
+   Declare colour here and nowhere else — a page stylesheet that redeclares a
+   token silently wins, because page styles are imported later.
    ========================================================================== */
 
 /* --- Tokens ---------------------------------------------------------------
@@ -20,58 +22,58 @@
 :root {
   /* Royal blue, not the violet-leaning indigo the kit shipped with — the
      purple read as a different brand next to the blue blobs. */
-  --ppi-accent: #1a56db;
-  --ppi-accent-hover: #1544b0;
-  --ppi-accent-fg: #ffffff;
+  --ss-accent: #1a56db;
+  --ss-accent-hover: #1544b0;
+  --ss-accent-fg: #ffffff;
 
-  --ppi-blue: #1a56db;
-  --ppi-blue-mid: #d0e0fc; /* light blue used for display text + icons on dark */
-  --ppi-sky: #0ea5e9;
-  --ppi-indigo: #6366f1;
+  --ss-blue: #1a56db;
+  --ss-blue-mid: #d0e0fc; /* light blue used for display text + icons on dark */
+  --ss-sky: #0ea5e9;
+  --ss-indigo: #6366f1;
 
-  --ppi-bg: #f8fafc;
+  --ss-bg: #f8fafc;
   /* Deep indigo rather than slate-black: a true black reads as a foreign
      element against a page built on blues. */
-  --ppi-text: #131c47;
-  --ppi-text-muted: #4a5578;
+  --ss-text: #131c47;
+  --ss-text-muted: #4a5578;
 
   /* Glass surface */
-  --ppi-glass-bg: rgba(255, 255, 255, 0.7);
-  --ppi-glass-border: rgba(255, 255, 255, 0.4);
-  --ppi-glass-shadow: rgba(15, 23, 42, 0.05);
+  --ss-glass-bg: rgba(255, 255, 255, 0.7);
+  --ss-glass-border: rgba(255, 255, 255, 0.4);
+  --ss-glass-shadow: rgba(15, 23, 42, 0.05);
 
   /* Ambient blob opacities — see the note in DESIGN.md about dark mode. */
-  --ppi-blob-a-alpha: 0.25;
-  --ppi-blob-b-alpha: 0.2;
-  --ppi-blob-c-alpha: 0.15;
+  --ss-blob-a-alpha: 0.25;
+  --ss-blob-b-alpha: 0.2;
+  --ss-blob-c-alpha: 0.15;
 
-  --ppi-glow-color: rgba(26, 86, 219, 0.16);
+  --ss-glow-color: rgba(26, 86, 219, 0.16);
 
-  --ppi-font-display: 'Playfair Display', Georgia, Cambria, serif;
+  --ss-font-display: 'Playfair Display', Georgia, Cambria, serif;
   /* Body copy. No web font: this resolves to SF Pro on Apple, Segoe UI on
      Windows and Roboto on Android — the same stack the source project uses. */
-  --ppi-font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+  --ss-font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
 
   color-scheme: light dark;
 }
 
 :root[data-theme='dark'] {
-  --ppi-bg: #020617;
-  --ppi-text: #f1f5f9;
-  --ppi-text-muted: #94a3b8;
+  --ss-bg: #020617;
+  --ss-text: #f1f5f9;
+  --ss-text-muted: #94a3b8;
 
-  --ppi-glass-bg: rgba(15, 23, 42, 0.6);
-  --ppi-glass-border: rgba(255, 255, 255, 0.1);
-  --ppi-glass-shadow: rgba(0, 0, 0, 0.3);
+  --ss-glass-bg: rgba(15, 23, 42, 0.6);
+  --ss-glass-border: rgba(255, 255, 255, 0.1);
+  --ss-glass-shadow: rgba(0, 0, 0, 0.3);
 
   /* Lower than light mode on purpose: the same opacity that reads as a soft
      tint on white glares against near-black. */
-  --ppi-blob-a-alpha: 0.15;
-  --ppi-blob-b-alpha: 0.15;
-  --ppi-blob-c-alpha: 0.1;
+  --ss-blob-a-alpha: 0.15;
+  --ss-blob-b-alpha: 0.15;
+  --ss-blob-c-alpha: 0.1;
 
-  --ppi-glow-color: rgba(208, 224, 252, 0.1);
+  --ss-glow-color: rgba(208, 224, 252, 0.1);
 }
 
 /* --- Page ground ----------------------------------------------------------
@@ -93,7 +95,7 @@ body {
 /* --- Ambient background ---------------------------------------------------
    Three slow-drifting colour blobs. Pure CSS: no canvas, no animation library.
    The container is fixed and clipped; each blob is one blurred circle.        */
-.ppi-ambient {
+.ss-ambient {
   pointer-events: none;
   position: fixed;
   inset: 0;
@@ -101,7 +103,7 @@ body {
   overflow: hidden;
 }
 
-.ppi-blob {
+.ss-blob {
   position: absolute;
   border-radius: 9999px;
   filter: blur(72px);
@@ -110,31 +112,31 @@ body {
   width: 34rem;
 }
 
-.ppi-blob-a {
+.ss-blob-a {
   left: -8rem;
   top: -10rem;
-  background: var(--ppi-blue);
-  opacity: var(--ppi-blob-a-alpha);
-  animation: ppi-drift-a 22s ease-in-out infinite;
+  background: var(--ss-blue);
+  opacity: var(--ss-blob-a-alpha);
+  animation: ss-drift-a 22s ease-in-out infinite;
 }
 
-.ppi-blob-b {
+.ss-blob-b {
   right: -10rem;
   top: 4rem;
-  background: var(--ppi-sky);
-  opacity: var(--ppi-blob-b-alpha);
-  animation: ppi-drift-b 28s ease-in-out infinite;
+  background: var(--ss-sky);
+  opacity: var(--ss-blob-b-alpha);
+  animation: ss-drift-b 28s ease-in-out infinite;
 }
 
-.ppi-blob-c {
+.ss-blob-c {
   bottom: -10rem;
   left: 25%;
-  background: var(--ppi-indigo);
-  opacity: var(--ppi-blob-c-alpha);
-  animation: ppi-drift-c 34s ease-in-out infinite;
+  background: var(--ss-indigo);
+  opacity: var(--ss-blob-c-alpha);
+  animation: ss-drift-c 34s ease-in-out infinite;
 }
 
-@keyframes ppi-drift-a {
+@keyframes ss-drift-a {
   0%,
   100% {
     transform: translate3d(0, 0, 0) scale(1);
@@ -144,7 +146,7 @@ body {
   }
 }
 
-@keyframes ppi-drift-b {
+@keyframes ss-drift-b {
   0%,
   100% {
     transform: translate3d(0, 0, 0) scale(1.1);
@@ -154,7 +156,7 @@ body {
   }
 }
 
-@keyframes ppi-drift-c {
+@keyframes ss-drift-c {
   0%,
   100% {
     transform: translate3d(0, 0, 0) scale(0.95);
@@ -166,29 +168,29 @@ body {
 
 /* Motion is decoration here, so it goes away entirely when the OS asks. */
 @media (prefers-reduced-motion: reduce) {
-  .ppi-blob-a,
-  .ppi-blob-b,
-  .ppi-blob-c {
+  .ss-blob-a,
+  .ss-blob-b,
+  .ss-blob-c {
     animation: none;
   }
 }
 
 /* --- Cursor glow ----------------------------------------------------------
-   Position comes from --ppi-x/--ppi-y, written on pointermove by the
+   Position comes from --ss-x/--ss-y, written on pointermove by the
    AmbientBackground component. Starts hidden and fades in on the first move, so
    it never flashes in a corner before the pointer has been located.
 
    It lives on the background layer, so it washes across the page ground and
    reads through translucent glass panels rather than sitting on top of text.
    Putting it above the content means glow over your words.                    */
-.ppi-cursor-glow {
+.ss-cursor-glow {
   position: fixed;
   inset: 0;
   opacity: 0;
   transition: opacity 400ms ease-out;
   background: radial-gradient(
-    22rem circle at var(--ppi-x, 50%) var(--ppi-y, 50%),
-    var(--ppi-glow-color),
+    22rem circle at var(--ss-x, 50%) var(--ss-y, 50%),
+    var(--ss-glow-color),
     transparent 70%
   );
 }
@@ -197,10 +199,10 @@ body {
    The one treatment that makes the whole thing cohere: translucent, blurred,
    hairline border, soft lift. Put it on bars, panels, cards, anything floating.
    Never give a glass element an opaque background.                            */
-.ppi-glass {
-  background: var(--ppi-glass-bg);
-  border: 1px solid var(--ppi-glass-border);
-  box-shadow: 0 10px 15px -3px var(--ppi-glass-shadow);
+.ss-glass {
+  background: var(--ss-glass-bg);
+  border: 1px solid var(--ss-glass-border);
+  box-shadow: 0 10px 15px -3px var(--ss-glass-shadow);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
 }
@@ -209,8 +211,8 @@ body {
    Every page <h1> and card heading uses the serif. No web font is loaded: the
    stack resolves to Georgia on virtually every machine, which is the look the
    source project actually ships.                                              */
-.ppi-display {
-  font-family: var(--ppi-font-display);
+.ss-display {
+  font-family: var(--ss-font-display);
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -218,7 +220,7 @@ body {
 /* --- Primary button -------------------------------------------------------
    Glass rather than a flat fill: translucent accent over a blur, lit top edge,
    coloured drop shadow so it still reads as the primary action.               */
-.ppi-button-primary {
+.ss-button-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -227,21 +229,21 @@ body {
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--ppi-accent-fg);
-  background: color-mix(in srgb, var(--ppi-accent) 80%, transparent);
+  color: var(--ss-accent-fg);
+  background: color-mix(in srgb, var(--ss-accent) 80%, transparent);
   border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--ppi-accent) 25%, transparent);
+  box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--ss-accent) 25%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   cursor: pointer;
   transition: background-color 150ms ease;
 }
 
-.ppi-button-primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--ppi-accent) 95%, transparent);
+.ss-button-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ss-accent) 95%, transparent);
 }
 
-.ppi-button-primary:disabled {
+.ss-button-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -252,15 +254,15 @@ body {
    Inverting a black PNG can only ever produce white; masking gives real colour.
 
    Usage:
-     <span class="ppi-icon" style="--ppi-icon-src: url(/icons/home.png)" />     */
-.ppi-icon {
+     <span class="ss-icon" style="--ss-icon-src: url(/icons/home.png)" />     */
+.ss-icon {
   display: inline-block;
   height: 1.25rem;
   width: 1.25rem;
   flex-shrink: 0;
-  background-color: var(--ppi-blue);
-  mask-image: var(--ppi-icon-src);
-  -webkit-mask-image: var(--ppi-icon-src);
+  background-color: var(--ss-blue);
+  mask-image: var(--ss-icon-src);
+  -webkit-mask-image: var(--ss-icon-src);
   mask-size: contain;
   -webkit-mask-size: contain;
   mask-repeat: no-repeat;
@@ -269,6 +271,6 @@ body {
   -webkit-mask-position: center;
 }
 
-:root[data-theme='dark'] .ppi-icon {
-  background-color: var(--ppi-blue-mid);
+:root[data-theme='dark'] .ss-icon {
+  background-color: var(--ss-blue-mid);
 }

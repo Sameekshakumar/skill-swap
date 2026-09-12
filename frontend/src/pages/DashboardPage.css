@@ -360,6 +360,6 @@
 /* --- Empty states ---------------------------------------------------------
    One recipe for all four tabs: a quiet glass panel with a dashed accent edge. */
 .empty-state {
-  background: color-mix(in srgb, var(--ppi-accent) 5%, transparent);
-  border: 1px dashed color-mix(in srgb, var(--ppi-accent) 35%, transparent);
+  background: color-mix(in srgb, var(--ss-accent) 5%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--ss-accent) 35%, transparent);
 }

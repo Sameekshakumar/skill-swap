@@ -8,7 +8,7 @@
    active tab. Colour now comes from styles/theme.css. */
 
 :root {
-  font-family: var(--ppi-font-body);
+  font-family: var(--ss-font-body);
   line-height: 1.6;
   font-weight: 400;
   letter-spacing: -0.003em;

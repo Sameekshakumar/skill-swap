@@ -119,7 +119,7 @@
 }
 
 .theme-toggle:hover .theme-toggle-icon {
-  background-color: var(--ppi-accent);
+  background-color: var(--ss-accent);
 }
 
 /* The sun flips to its night reading when the dark theme is on. */

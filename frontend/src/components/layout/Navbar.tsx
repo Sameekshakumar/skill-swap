@@ -31,8 +31,8 @@ export default function Navbar() {
             {/* A black PNG used as a mask, so the paint comes from the theme
                 rather than the image — one asset serves both modes. */}
             <span
-              className="ppi-icon theme-toggle-icon"
-              style={{ ['--ppi-icon-src' as string]: `url(${nightModeIcon})` }}
+              className="ss-icon theme-toggle-icon"
+              style={{ ['--ss-icon-src' as string]: `url(${nightModeIcon})` }}
               aria-hidden="true"
             />
           </button>

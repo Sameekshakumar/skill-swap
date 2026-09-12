@@ -4,9 +4,9 @@ import { useEffect, useRef } from 'react';
  * Drifting colour blobs plus a glow that follows the cursor, sat behind the page
  * content so glass surfaces above have something to refract.
  *
- * Portable version of the component from the PPI portal: styling comes entirely
- * from `ppi-ui.css`, so it carries no Tailwind and no other dependency. Render it
- * once near the root of each full-page surface:
+ * Styling comes entirely from `styles/design-system.css`, so this carries no
+ * dependencies of its own. Render it once near the root of each full-page
+ * surface:
  *
  *     <div style={{ position: 'relative', minHeight: '100vh' }}>
  *       <AmbientBackground />
@@ -37,8 +37,8 @@ export function AmbientBackground() {
         frame = 0;
         const el = glow.current;
         if (!el) return;
-        el.style.setProperty('--ppi-x', `${event.clientX}px`);
-        el.style.setProperty('--ppi-y', `${event.clientY}px`);
+        el.style.setProperty('--ss-x', `${event.clientX}px`);
+        el.style.setProperty('--ss-y', `${event.clientY}px`);
         el.style.opacity = '1';
       });
     }
@@ -51,11 +51,11 @@ export function AmbientBackground() {
   }, []);
 
   return (
-    <div aria-hidden="true" className="ppi-ambient">
-      <div className="ppi-blob ppi-blob-a" />
-      <div className="ppi-blob ppi-blob-b" />
-      <div className="ppi-blob ppi-blob-c" />
-      <div ref={glow} className="ppi-cursor-glow" />
+    <div aria-hidden="true" className="ss-ambient">
+      <div className="ss-blob ss-blob-a" />
+      <div className="ss-blob ss-blob-b" />
+      <div className="ss-blob ss-blob-c" />
+      <div ref={glow} className="ss-cursor-glow" />
     </div>
   );
 }

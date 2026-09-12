@@ -91,7 +91,7 @@
   height: 1.05rem;
   flex-shrink: 0;
   margin: 0;
-  border: 1.5px solid var(--ppi-text-muted);
+  border: 1.5px solid var(--ss-text-muted);
   border-radius: 4px;
   background: transparent;
   cursor: pointer;
@@ -101,8 +101,8 @@
 }
 
 .remember-row input:checked {
-  background-color: var(--ppi-accent);
-  border-color: var(--ppi-accent);
+  background-color: var(--ss-accent);
+  border-color: var(--ss-accent);
 }
 
 .remember-row input:checked::after {
