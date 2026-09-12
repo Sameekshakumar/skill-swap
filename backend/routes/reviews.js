@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const Review = require('../models/Review');
-const User = require('../models/User');
-const Booking = require('../models/Booking');
+const prisma = require('../lib/prisma');
+const { HttpError, sendError } = require('../lib/httpError');
+
+const MAX_COMMENT = 500;
+
+// Matches the old `.populate('reviewer', 'name')`.
+const reviewerName = { reviewer: { select: { id: true, name: true } } };
 
 // Submit a review for someone
 router.post('/', auth, async (req, res) => {
@@ -11,55 +15,64 @@ router.post('/', auth, async (req, res) => {
     const { bookingId, rating, comment } = req.body;
 
     // Validate rating
-    if (!rating || rating < 1 || rating > 5) {
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
       return res.status(400).json({ error: 'Rating must be between 1 and 5' });
     }
-
-    // Find the booking
-    const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      return res.status(404).json({ error: 'Booking not found' });
+    if (comment && comment.length > MAX_COMMENT) {
+      return res.status(400).json({ error: `Comment must be ${MAX_COMMENT} characters or fewer` });
     }
 
-    // Check if the reviewer is part of this booking
-    if (booking.teacher.toString() !== req.user.id && booking.learner.toString() !== req.user.id) {
-      return res.status(403).json({ error: 'You can only review bookings you participated in' });
-    }
+    const review = await prisma.$transaction(async (tx) => {
+      const booking = await tx.booking.findUnique({ where: { id: bookingId } });
+      if (!booking) {
+        throw new HttpError(404, 'Booking not found');
+      }
 
-    // Determine who is being reviewed
-    const revieweeId = booking.teacher.toString() === req.user.id ? booking.learner : booking.teacher;
+      // Check if the reviewer is part of this booking
+      if (booking.teacherId !== req.user.id && booking.learnerId !== req.user.id) {
+        throw new HttpError(403, 'You can only review bookings you participated in');
+      }
 
-    // Check if review already exists
-    const existingReview = await Review.findOne({
-      reviewer: req.user.id,
-      reviewee: revieweeId,
-      booking: bookingId
-    });
+      // Only completed sessions are reviewable — otherwise a learner could
+      // request a session and immediately rate the teacher.
+      if (booking.status !== 'Completed') {
+        throw new HttpError(400, 'You can only review a completed session');
+      }
 
-    if (existingReview) {
-      return res.status(400).json({ error: 'You have already reviewed this person for this booking' });
-    }
+      // Determine who is being reviewed
+      const revieweeId = booking.teacherId === req.user.id ? booking.learnerId : booking.teacherId;
 
-    // Create the review
-    const review = new Review({
-      reviewer: req.user.id,
-      reviewee: revieweeId,
-      booking: bookingId,
-      rating,
-      comment,
-      skill: booking.skill
-    });
+      // Lock the reviewee so two reviews landing at once cannot both compute
+      // the average from a stale set of rows.
+      await tx.$executeRaw`SELECT id FROM "User" WHERE id = ${revieweeId} FOR UPDATE`;
 
-    await review.save();
+      const created = await tx.review.create({
+        data: {
+          reviewerId: req.user.id,
+          revieweeId,
+          bookingId,
+          rating,
+          comment: comment?.trim(),
+          skill: booking.skill
+        }
+      });
 
-    // Update reviewee's rating
-    const allReviews = await Review.find({ reviewee: revieweeId });
-    const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
-    const avgRating = totalRating / allReviews.length;
+      // Recompute the reviewee's aggregate from the table rather than nudging it.
+      const stats = await tx.review.aggregate({
+        where: { revieweeId },
+        _avg: { rating: true },
+        _count: true
+      });
 
-    await User.findByIdAndUpdate(revieweeId, {
-      rating: Math.round(avgRating * 10) / 10, // Round to 1 decimal
-      reviewCount: allReviews.length
+      await tx.user.update({
+        where: { id: revieweeId },
+        data: {
+          rating: Math.round(stats._avg.rating * 10) / 10, // Round to 1 decimal
+          reviewCount: stats._count
+        }
+      });
+
+      return created;
     });
 
     res.status(201).json({
@@ -67,93 +80,102 @@ router.post('/', auth, async (req, res) => {
       review
     });
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: 'Server error' });
+    // The @@unique([bookingId, reviewerId]) constraint is what actually
+    // prevents a second review, including under a race.
+    if (err.code === 'P2002') {
+      return res.status(400).json({ error: 'You have already reviewed this person for this booking' });
+    }
+    sendError(res, err, 'Server error');
   }
 });
 
 // Get reviews for a user
 router.get('/user/:userId', async (req, res) => {
   try {
-    const reviews = await Review.find({ reviewee: req.params.userId })
-      .populate('reviewer', 'name')
-      .sort({ createdAt: -1 });
+    const reviews = await prisma.review.findMany({
+      where: { revieweeId: req.params.userId },
+      include: reviewerName,
+      orderBy: { createdAt: 'desc' }
+    });
 
     res.json(reviews);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: 'Server error' });
+    sendError(res, err, 'Server error');
   }
 });
 
 // Get reviews given by the current user
 router.get('/my-reviews', auth, async (req, res) => {
   try {
-    const reviews = await Review.find({ reviewer: req.user.id })
-      .populate('reviewee', 'name email')
-      .populate('booking')
-      .sort({ createdAt: -1 });
+    const reviews = await prisma.review.findMany({
+      where: { reviewerId: req.user.id },
+      include: {
+        reviewee: { select: { id: true, name: true, email: true } },
+        booking: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
 
     res.json(reviews);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: 'Server error' });
+    sendError(res, err, 'Server error');
   }
 });
 
 // Get reviews received by the current user
 router.get('/received', auth, async (req, res) => {
   try {
-    const reviews = await Review.find({ reviewee: req.user.id })
-      .populate('reviewer', 'name')
-      .sort({ createdAt: -1 });
+    const reviews = await prisma.review.findMany({
+      where: { revieweeId: req.user.id },
+      include: reviewerName,
+      orderBy: { createdAt: 'desc' }
+    });
 
     res.json(reviews);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: 'Server error' });
+    sendError(res, err, 'Server error');
   }
 });
 
 // Get pending reviews (completed bookings without reviews)
 router.get('/pending', auth, async (req, res) => {
   try {
-    // Find completed bookings where the user hasn't reviewed the other person
-    const bookings = await Booking.find({
-      $or: [
-        { teacher: req.user.id, completedByTeacher: true },
-        { learner: req.user.id, completedByLearner: true }
-      ],
-      status: 'Completed'
+    const userId = req.user.id;
+
+    // One query instead of the old per-booking lookups: pull each completed
+    // booking along with this user's review of it, if any.
+    const bookings = await prisma.booking.findMany({
+      where: {
+        status: 'Completed',
+        OR: [
+          { teacherId: userId, completedByTeacher: true },
+          { learnerId: userId, completedByLearner: true }
+        ]
+      },
+      include: {
+        reviews: { where: { reviewerId: userId }, select: { id: true } },
+        teacher: { select: { id: true, name: true } },
+        learner: { select: { id: true, name: true } }
+      },
+      orderBy: { dateTime: 'desc' }
     });
 
-    const pendingReviews = [];
-
-    for (const booking of bookings) {
-      const revieweeId = booking.teacher.toString() === req.user.id ? booking.learner : booking.teacher;
-      
-      const existingReview = await Review.findOne({
-        reviewer: req.user.id,
-        reviewee: revieweeId,
-        booking: booking._id
-      });
-
-      if (!existingReview) {
-        const reviewee = await User.findById(revieweeId);
-        pendingReviews.push({
-          bookingId: booking._id,
-          revieweeId: reviewee._id,
+    const pendingReviews = bookings
+      .filter((booking) => booking.reviews.length === 0)
+      .map((booking) => {
+        const reviewee = booking.teacherId === userId ? booking.learner : booking.teacher;
+        return {
+          bookingId: booking.id,
+          revieweeId: reviewee.id,
           revieweeName: reviewee.name,
           skill: booking.skill,
           datetime: booking.dateTime
-        });
-      }
-    }
+        };
+      });
 
     res.json(pendingReviews);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: 'Server error' });
+    sendError(res, err, 'Server error');
   }
 });
 

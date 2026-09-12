@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SkillLevel {
+  Beginner
+  Intermediate
+  Advanced
+  Expert
+}
+
+enum BookingStatus {
+  Requested
+  Confirmed
+  Completed
+  Cancelled
+}
+
+enum BookingParty {
+  learner
+  teacher
+}
+
+enum TransactionType {
+  Initial
+  Lock
+  Transfer
+  Refund
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  name          String
+  college       String?
+  yearOfStudy   String?
+  bio           String?
+  creditBalance Int      @default(10)
+  rating        Float    @default(0)
+  reviewCount   Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  skillsToTeach  Skill[]
+  skillsToLearn  SkillToLearn[]
+  bookingsAsTeacher Booking[]     @relation("TeacherBookings")
+  bookingsAsLearner Booking[]     @relation("LearnerBookings")
+  transactions      Transaction[]
+  reviewsWritten    Review[]      @relation("ReviewsWritten")
+  reviewsReceived   Review[]      @relation("ReviewsReceived")
+}
+
+model Skill {
+  id             String     @id @default(uuid())
+  skillName      String
+  level          SkillLevel
+  creditsPerHour Int        @default(1)
+  description    String
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([userId])
+  @@index([skillName])
+}
+
+model SkillToLearn {
+  id        String   @id @default(uuid())
+  skillName String
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillName])
+  @@index([skillName])
+}
+
+model Booking {
+  id                 String        @id @default(uuid())
+  skill              String
+  status             BookingStatus @default(Requested)
+  creditAmount       Int
+  dateTime           DateTime
+  duration           Int           @default(1)
+  completedByLearner Boolean       @default(false)
+  completedByTeacher Boolean       @default(false)
+  cancelledBy        BookingParty?
+  notes              String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  teacherId String
+  teacher   User   @relation("TeacherBookings", fields: [teacherId], references: [id])
+  learnerId String
+  learner   User   @relation("LearnerBookings", fields: [learnerId], references: [id])
+  skillId   String?
+  skillRef  Skill? @relation(fields: [skillId], references: [id], onDelete: SetNull)
+
+  transactions Transaction[]
+  reviews      Review[]
+
+  @@index([teacherId])
+  @@index([learnerId])
+  @@index([status])
+}
+
+model Transaction {
+  id          String          @id @default(uuid())
+  type        TransactionType
+  amount      Int
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookingId String?
+  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([bookingId])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String?
+  skill     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reviewerId String
+  reviewer   User    @relation("ReviewsWritten", fields: [reviewerId], references: [id], onDelete: Cascade)
+  revieweeId String
+  reviewee   User    @relation("ReviewsReceived", fields: [revieweeId], references: [id], onDelete: Cascade)
+  bookingId  String
+  booking    Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, reviewerId])
+  @@index([revieweeId])
+}

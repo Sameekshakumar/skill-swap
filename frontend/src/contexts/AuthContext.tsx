@@ -15,14 +15,12 @@ interface User {
   name: string;
   email: string;
   creditBalance: number;
-  university?: string;
 }
 
 interface RegisterData {
   name: string;
   email: string;
   password: string;
-  university?: string;
 }
 
 interface LoginResponse {
