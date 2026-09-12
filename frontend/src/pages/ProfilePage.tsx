@@ -7,7 +7,7 @@ import ReviewsList from '../components/reviews/ReviewsList';
 import './ProfilePage.css';
 
 interface Skill {
-  _id?: string;
+  id?: string;
   skillName: string;
   level?: string;
   creditsPerHour?: number;
@@ -217,20 +217,21 @@ const ProfilePage = () => {
     }
   };
 
-  const handleRemoveSkill = async (skillId: string, type: 'teach' | 'learn') => {
+  // 'teach' removes by skill id, 'learn' removes by skill name.
+  const handleRemoveSkill = async (idOrName: string, type: 'teach' | 'learn') => {
     try {
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
 
       if (type === 'teach') {
-        const response = await axios.delete(`/profile/skills/teach/${skillId}`, config);
+        const response = await axios.delete(`/profile/skills/teach/${idOrName}`, config);
         setProfile(prev => prev ? {
           ...prev,
           skillsToTeach: response.data
         } : null);
       } else {
-        const response = await axios.delete(`/profile/skills/learn/${skillId}`, config);
+        const response = await axios.delete(`/profile/skills/learn/${encodeURIComponent(idOrName)}`, config);
         setProfile(prev => prev ? {
           ...prev,
           skillsToLearn: response.data
@@ -426,12 +427,12 @@ const ProfilePage = () => {
 
           <div className="skills-list">
             {profile.skillsToTeach.map((skill) => (
-              <div key={skill._id} className="skill-item-teach">
+              <div key={skill.id} className="skill-item-teach">
                 <div className="skill-item-header">
                   <h3>{skill.skillName}</h3>
                   <button
                     className="skill-item-close-btn"
-                    onClick={() => skill._id && handleRemoveSkill(skill._id, 'teach')}
+                    onClick={() => skill.id && handleRemoveSkill(skill.id, 'teach')}
                   >
                     ×
                   </button>

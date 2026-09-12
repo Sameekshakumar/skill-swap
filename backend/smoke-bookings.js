@@ -1,0 +1,142 @@
+// Smoke test for the Prisma-backed booking routes, focused on credit movement.
+// Run with the server up: node smoke-bookings.js
+const assert = require('assert');
+
+const BASE = `http://localhost:${process.env.PORT || 5001}/api`;
+
+const call = async (method, path, { token, body } = {}) => {
+  const res = await fetch(BASE + path, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    ...(body ? { body: JSON.stringify(body) } : {})
+  });
+  const text = await res.text();
+  try {
+    return { status: res.status, body: JSON.parse(text) };
+  } catch {
+    return { status: res.status, body: text };
+  }
+};
+
+const newUser = async (tag) => {
+  const res = await call('POST', '/auth/register', {
+    body: { name: `Smoke ${tag}`, email: `smoke-${tag}-${Date.now()}-${Math.random()}@example.com`, password: 'secret123' }
+  });
+  assert.strictEqual(res.status, 201, `register ${tag}: ${JSON.stringify(res.body)}`);
+  return { token: res.body.token, id: res.body.user.id };
+};
+
+const credits = async (token) => (await call('GET', '/profile', { token })).body.creditBalance;
+
+const tomorrow = () => new Date(Date.now() + 86400000).toISOString();
+
+const teach = async (token, skillName, creditsPerHour) => {
+  const res = await call('POST', '/profile/skills/teach', {
+    token,
+    body: { skillName, level: 'Expert', creditsPerHour, description: 'desc' }
+  });
+  assert.strictEqual(res.status, 200, JSON.stringify(res.body));
+  return res.body[0].id;
+};
+
+const request = (learner, teacherId, skill, extra = {}) =>
+  call('POST', '/bookings', {
+    token: learner.token,
+    body: { teacherId, skill, dateTime: tomorrow(), duration: 2, creditsPerHour: 2, ...extra }
+  });
+
+(async () => {
+  // --- happy path: request -> accept -> both complete -> credits transfer ---
+  const teacher = await newUser('teacher');
+  const learner = await newUser('learner');
+  await teach(teacher.token, 'Guitar', 2);
+
+  assert.strictEqual(await credits(learner.token), 10);
+  const booked = await request(learner, teacher.id, 'Guitar');
+  assert.strictEqual(booked.status, 201, JSON.stringify(booked.body));
+  assert.strictEqual(booked.body.creditAmount, 4, '2 credits/hr x 2 hours should be 4');
+  assert.strictEqual(booked.body.status, 'Requested');
+  assert.strictEqual(booked.body.teacher.name, 'Smoke teacher', 'teacher was not populated');
+  assert.strictEqual(await credits(learner.token), 6, 'credits were not locked at request time');
+  assert.strictEqual(await credits(teacher.token), 10, 'teacher was paid before completion');
+
+  const id = booked.body.id;
+
+  // Only the teacher may accept.
+  assert.strictEqual((await call('POST', `/bookings/${id}/accept`, { token: learner.token })).status, 403);
+  assert.strictEqual((await call('POST', `/bookings/${id}/accept`, { token: teacher.token })).status, 200);
+  assert.strictEqual((await call('POST', `/bookings/${id}/accept`, { token: teacher.token })).status, 400,
+    'a confirmed booking was accepted twice');
+
+  // Dual confirmation: one side alone must not pay out.
+  await call('POST', `/bookings/${id}/complete`, { token: learner.token, body: { completedBy: 'learner' } });
+  assert.strictEqual(await credits(teacher.token), 10, 'teacher was paid on a single confirmation');
+  const done = await call('POST', `/bookings/${id}/complete`, { token: teacher.token, body: { completedBy: 'teacher' } });
+  assert.strictEqual(done.body.status, 'Completed');
+  assert.strictEqual(await credits(teacher.token), 14, 'teacher was not paid on dual confirmation');
+  assert.strictEqual(await credits(learner.token), 6, 'learner was charged twice');
+
+  // A completed session cannot be cancelled or re-completed.
+  assert.strictEqual((await call('POST', `/bookings/${id}/cancel`, { token: learner.token })).status, 400);
+  assert.strictEqual((await call('POST', `/bookings/${id}/complete`, { token: teacher.token, body: { completedBy: 'teacher' } })).status, 400);
+  assert.strictEqual(await credits(teacher.token), 14, 'teacher was paid twice');
+
+  // --- cancelling refunds exactly once ---
+  const l2 = await newUser('cancel');
+  const b2 = await request(l2, teacher.id, 'Guitar');
+  assert.strictEqual(await credits(l2.token), 6);
+  assert.strictEqual((await call('POST', `/bookings/${b2.body.id}/cancel`, { token: l2.token })).status, 200);
+  assert.strictEqual(await credits(l2.token), 10, 'cancelling did not refund');
+  const again = await call('POST', `/bookings/${b2.body.id}/cancel`, { token: l2.token });
+  assert.strictEqual(again.status, 400, 'an already-cancelled booking was cancelled again');
+  assert.strictEqual(await credits(l2.token), 10, 'cancelling twice refunded twice');
+
+  // --- rejecting refunds exactly once ---
+  const l3 = await newUser('reject');
+  const b3 = await request(l3, teacher.id, 'Guitar');
+  assert.strictEqual((await call('POST', `/bookings/${b3.body.id}/reject`, { token: teacher.token })).status, 200);
+  assert.strictEqual(await credits(l3.token), 10, 'rejecting did not refund');
+  assert.strictEqual((await call('POST', `/bookings/${b3.body.id}/reject`, { token: teacher.token })).status, 400);
+  assert.strictEqual(await credits(l3.token), 10, 'rejecting twice refunded twice');
+
+  // --- the client-supplied price must not undercut the teacher's rate ---
+  const l4 = await newUser('cheapskate');
+  const underpaid = await request(l4, teacher.id, 'Guitar', { creditsPerHour: 1 });
+  assert.strictEqual(underpaid.body.creditAmount, 4, 'the client set its own price');
+  assert.strictEqual((await request(l4, teacher.id, 'Guitar', { creditsPerHour: 0 })).status, 400,
+    'a zero rate for an unknown skill was accepted');
+
+  // --- guards ---
+  const broke = await newUser('broke');
+  assert.strictEqual((await request(broke, teacher.id, 'Guitar', { duration: 6 })).status, 400,
+    'a booking beyond the credit balance was allowed');
+  assert.strictEqual(await credits(broke.token), 10, 'a failed booking still moved credits');
+  assert.strictEqual((await request(teacher, teacher.id, 'Guitar')).status, 400, 'self-booking was allowed');
+  assert.strictEqual((await request(broke, 'no-such-user', 'Guitar')).status, 404);
+  assert.strictEqual((await call('GET', '/bookings')).status, 401, 'bookings are readable without a token');
+
+  // --- reset refunds every pending request at once ---
+  const l5 = await newUser('reset');
+  await request(l5, teacher.id, 'Guitar');
+  assert.strictEqual(await credits(l5.token), 6);
+  const reset = await call('POST', '/bookings/reset', { token: l5.token });
+  assert.strictEqual(reset.body.creditsRestored, 4);
+  assert.strictEqual(reset.body.bookingsCancelled, 1);
+  assert.strictEqual(await credits(l5.token), 10, 'reset did not restore credits');
+
+  // --- listings ---
+  const mine = await call('GET', '/bookings', { token: learner.token });
+  assert.ok(mine.body.some((b) => b.id === id), 'the booking is missing from GET /bookings');
+  const completed = await call('GET', '/bookings/completed', { token: teacher.token });
+  assert.ok(completed.body.some((b) => b.id === id), 'the completed session is missing');
+  const orphans = await call('GET', '/bookings/cleanup-orphaned', { token: learner.token });
+  assert.strictEqual(orphans.body.creditsRefunded, 0);
+
+  console.log('bookings smoke test passed');
+})().catch((err) => {
+  console.error(err.message);
+  process.exit(1);
+});

@@ -7,9 +7,9 @@ import PendingReviews from '../components/reviews/PendingReviews';
 import './DashboardPage.css';
 
 interface Booking {
-  _id: string;
-  teacher: { _id: string; name: string; email: string };
-  learner: { _id: string; name: string; email: string };
+  id: string;
+  teacher: { id: string; name: string; email: string };
+  learner: { id: string; name: string; email: string };
   skill: string;
   status: string;
   creditAmount: number;
@@ -204,15 +204,15 @@ export default function DashboardPage() {
             <>
               <button 
                 className="action-btn accept-btn"
-                onClick={() => handleAccept(booking._id)}
-                disabled={actionLoading === booking._id}
+                onClick={() => handleAccept(booking.id)}
+                disabled={actionLoading === booking.id}
               >
                 Accept
               </button>
               <button 
                 className="action-btn reject-btn"
-                onClick={() => handleReject(booking._id)}
-                disabled={actionLoading === booking._id}
+                onClick={() => handleReject(booking.id)}
+                disabled={actionLoading === booking.id}
               >
                 Reject
               </button>
@@ -222,8 +222,8 @@ export default function DashboardPage() {
           {booking.status === 'Requested' && !isTeacher && (
             <button 
               className="action-btn cancel-btn"
-              onClick={() => handleCancel(booking._id)}
-              disabled={actionLoading === booking._id}
+              onClick={() => handleCancel(booking.id)}
+              disabled={actionLoading === booking.id}
             >
               Cancel Request
             </button>
@@ -232,8 +232,8 @@ export default function DashboardPage() {
           {booking.status === 'Confirmed' && (
             <button 
               className="action-btn complete-btn"
-              onClick={() => handleComplete(booking._id, isTeacher ? 'teacher' : 'learner')}
-              disabled={actionLoading === booking._id}
+              onClick={() => handleComplete(booking.id, isTeacher ? 'teacher' : 'learner')}
+              disabled={actionLoading === booking.id}
             >
               {isTeacher ? booking.completedByTeacher ? '✓ Marked Complete by You' : 'Mark Complete' 
                        : booking.completedByLearner ? '✓ Marked Complete by You' : 'Mark Complete'}
@@ -318,7 +318,7 @@ export default function DashboardPage() {
                     ) : (
                       <div className="bookings-grid">
                         {requests.map(booking => (
-                          <BookingCard key={booking._id} booking={booking} userType="teacher" />
+                          <BookingCard key={booking.id} booking={booking} userType="teacher" />
                         ))}
                       </div>
                     )}
@@ -344,7 +344,7 @@ export default function DashboardPage() {
                     ) : (
                       <div className="bookings-grid">
                         {myRequests.map(booking => (
-                          <BookingCard key={booking._id} booking={booking} userType="learner" />
+                          <BookingCard key={booking.id} booking={booking} userType="learner" />
                         ))}
                       </div>
                     )}
@@ -370,7 +370,7 @@ export default function DashboardPage() {
                     ) : (
                       <div className="bookings-grid">
                         {upcoming.map(booking => (
-                          <BookingCard key={booking._id} booking={booking} userType={user?.id === booking.teacher._id ? 'teacher' : 'learner'} />
+                          <BookingCard key={booking.id} booking={booking} userType={user?.id === booking.teacher.id ? 'teacher' : 'learner'} />
                         ))}
                       </div>
                     )}
@@ -396,7 +396,7 @@ export default function DashboardPage() {
                     ) : (
                       <div className="bookings-grid">
                         {completed.map(booking => (
-                          <BookingCard key={booking._id} booking={booking} userType={user?.id === booking.teacher._id ? 'teacher' : 'learner'} />
+                          <BookingCard key={booking.id} booking={booking} userType={user?.id === booking.teacher.id ? 'teacher' : 'learner'} />
                         ))}
                       </div>
                     )}

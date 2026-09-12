@@ -3,9 +3,9 @@ import axios from '../../utils/axios';
 import './ReviewsList.css';
 
 interface Review {
-  _id: string;
+  id: string;
   reviewer: {
-    _id: string;
+    id: string;
     name: string;
   };
   rating: number;
@@ -88,7 +88,7 @@ const ReviewsList = ({ userId, userName }: ReviewsListProps) => {
       {reviews.length > 0 && (
         <div className="reviews-list">
           {reviews.map((review) => (
-            <div key={review._id} className="review-card">
+            <div key={review.id} className="review-card">
               <div className="review-header">
                 <div className="reviewer-info">
                   <h4 className="reviewer-name">{review.reviewer.name}</h4>

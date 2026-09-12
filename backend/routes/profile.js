@@ -1,13 +1,20 @@
 const express = require('express');
 const router = express.Router();
+const { check, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
-const User = require('../models/User');
+const prisma = require('../lib/prisma');
+
+const { teachSkillsFor, learnSkillsFor, profileFor } = require('../lib/profile');
+
+const SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
 
 // Get user profile
 router.get('/', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
-    res.json(user);
+    const profile = await profileFor(req.user.id);
+    if (!profile) return res.status(404).json({ msg: 'User not found' });
+
+    res.json(profile);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
@@ -19,39 +26,49 @@ router.put('/', auth, async (req, res) => {
   const { name, college, yearOfStudy, bio } = req.body;
 
   try {
-    let user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ msg: 'User not found' });
+    // Blank values leave the existing field alone, matching the old `name || user.name`.
+    const data = {};
+    if (name) data.name = name.trim();
+    if (college) data.college = college;
+    if (yearOfStudy) data.yearOfStudy = yearOfStudy;
+    if (bio) data.bio = bio;
 
-    user.name = name || user.name;
-    user.college = college || user.college;
-    user.yearOfStudy = yearOfStudy || user.yearOfStudy;
-    user.bio = bio || user.bio;
+    await prisma.user.update({ where: { id: req.user.id }, data });
 
-    await user.save();
-    res.json(user);
+    res.json(await profileFor(req.user.id));
   } catch (err) {
+    if (err.code === 'P2025') return res.status(404).json({ msg: 'User not found' });
     console.error(err.message);
     res.status(500).send('Server Error');
   }
 });
 
 // Add a teaching skill
-router.post('/skills/teach', auth, async (req, res) => {
+router.post('/skills/teach', auth, [
+  check('skillName', 'Skill name is required').notEmpty(),
+  check('level', `Level must be one of: ${SKILL_LEVELS.join(', ')}`).isIn(SKILL_LEVELS),
+  check('creditsPerHour', 'Credits per hour must be between 1 and 3').isInt({ min: 1, max: 3 }),
+  check('description', 'Description is required').notEmpty()
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const { skillName, level, creditsPerHour, description } = req.body;
 
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ msg: 'User not found' });
-
-    user.skillsToTeach.push({
-      skillName,
-      level,
-      creditsPerHour,
-      description
+    await prisma.skill.create({
+      data: {
+        skillName: skillName.trim(),
+        level,
+        creditsPerHour: Number(creditsPerHour),
+        description,
+        userId: req.user.id
+      }
     });
 
-    await user.save();
-    res.json(user.skillsToTeach);
+    res.json(await teachSkillsFor(req.user.id));
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
@@ -59,19 +76,24 @@ router.post('/skills/teach', auth, async (req, res) => {
 });
 
 // Add a learning skill
-router.post('/skills/learn', auth, async (req, res) => {
-  const { skillName } = req.body;
+router.post('/skills/learn', auth, [
+  check('skillName', 'Skill name is required').notEmpty()
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
 
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ msg: 'User not found' });
+    // Adding the same skill twice is a no-op, as it was with the old `includes` guard.
+    const skillName = req.body.skillName.trim();
+    await prisma.skillToLearn.upsert({
+      where: { userId_skillName: { userId: req.user.id, skillName } },
+      create: { userId: req.user.id, skillName },
+      update: {}
+    });
 
-    if (!user.skillsToLearn.includes(skillName)) {
-      user.skillsToLearn.push(skillName);
-    }
-
-    await user.save();
-    res.json(user.skillsToLearn);
+    res.json(await learnSkillsFor(req.user.id));
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
@@ -81,15 +103,13 @@ router.post('/skills/learn', auth, async (req, res) => {
 // Remove a teaching skill
 router.delete('/skills/teach/:skillId', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ msg: 'User not found' });
+    // Scoped to the caller: skills now live in a shared table, so an unscoped
+    // delete by id would let anyone remove anyone else's skill.
+    await prisma.skill.deleteMany({
+      where: { id: req.params.skillId, userId: req.user.id }
+    });
 
-    user.skillsToTeach = user.skillsToTeach.filter(
-      skill => skill._id.toString() !== req.params.skillId
-    );
-
-    await user.save();
-    res.json(user.skillsToTeach);
+    res.json(await teachSkillsFor(req.user.id));
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
@@ -99,15 +119,11 @@ router.delete('/skills/teach/:skillId', auth, async (req, res) => {
 // Remove a learning skill
 router.delete('/skills/learn/:skillName', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ msg: 'User not found' });
+    await prisma.skillToLearn.deleteMany({
+      where: { skillName: req.params.skillName, userId: req.user.id }
+    });
 
-    user.skillsToLearn = user.skillsToLearn.filter(
-      skill => skill !== req.params.skillName
-    );
-
-    await user.save();
-    res.json(user.skillsToLearn);
+    res.json(await learnSkillsFor(req.user.id));
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
