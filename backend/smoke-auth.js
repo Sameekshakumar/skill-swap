@@ -1,52 +1,39 @@
-// Smoke test for the Prisma-backed auth routes: register -> login -> /me.
+// Smoke test for the Google-backed auth routes.
 // Run with the server up: node smoke-auth.js
 const assert = require('assert');
-
-const BASE = `http://localhost:${process.env.PORT || 5001}/api/auth`;
-const email = `smoke-${Date.now()}@example.com`;
-const password = 'secret123';
-
-const post = async (path, body) => {
-  const res = await fetch(BASE + path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  return { status: res.status, body: await res.json() };
-};
+const { call, newUser, finish, fail, prisma } = require('./smoke-helpers');
 
 (async () => {
-  const reg = await post('/register', { name: '  Smoke User  ', email: email.toUpperCase(), password });
-  assert.strictEqual(reg.status, 201, `register: ${JSON.stringify(reg.body)}`);
-  assert.ok(reg.body.token, 'register returned no token');
-  assert.strictEqual(reg.body.user.name, 'Smoke User', 'name was not trimmed');
-  assert.strictEqual(reg.body.user.email, email, 'email was not lowercased');
-  assert.strictEqual(reg.body.user.creditBalance, 10, 'creditBalance default is not 10');
+  const user = await newUser('auth');
 
-  const dupe = await post('/register', { name: 'Smoke User', email, password });
-  assert.strictEqual(dupe.status, 400, 'duplicate email was allowed');
+  // /me returns the signed-in user without leaking anything unexpected.
+  const me = await call('GET', '/auth/me', { token: user.token });
+  assert.strictEqual(me.status, 200, JSON.stringify(me.body));
+  assert.strictEqual(me.body.email, user.email);
+  assert.strictEqual(me.body.password, undefined, 'a password field came back');
+  assert.strictEqual(me.body.creditBalance, 10, 'creditBalance default is not 10');
+  assert.deepStrictEqual(me.body.skillsToLearn, [], 'skillsToLearn is not a string array');
+  assert.strictEqual(me.body.profileComplete, true, 'college and year should mark the profile complete');
 
-  const badPass = await post('/login', { email, password: 'wrongpassword' });
-  assert.strictEqual(badPass.status, 400, 'login accepted a wrong password');
+  // A user without college/year is flagged so the client can collect them.
+  const fresh = await newUser('nodetails', { college: null, yearOfStudy: null });
+  const freshMe = await call('GET', '/auth/me', { token: fresh.token });
+  assert.strictEqual(freshMe.body.profileComplete, false, 'an empty profile should not be complete');
 
-  // Logging in with different casing proves the stored email was normalized.
-  const login = await post('/login', { email: email.toUpperCase(), password });
-  assert.strictEqual(login.status, 200, `login: ${JSON.stringify(login.body)}`);
-  assert.ok(login.body.token, 'login returned no token');
+  assert.strictEqual((await call('GET', '/auth/me')).status, 401, '/me is reachable without a token');
 
-  const meRes = await fetch(BASE + '/me', { headers: { Authorization: `Bearer ${login.body.token}` } });
-  const me = await meRes.json();
-  assert.strictEqual(meRes.status, 200, `me: ${JSON.stringify(me)}`);
-  assert.strictEqual(me.email, email);
-  assert.strictEqual(me.password, undefined, 'password leaked from /me');
-  assert.deepStrictEqual(me.skillsToLearn, [], 'skillsToLearn is not a string array');
-  assert.deepStrictEqual(me.skillsToTeach, [], 'skillsToTeach missing');
+  // The password endpoints are gone for good.
+  for (const path of ['/auth/login', '/auth/register']) {
+    const res = await call('POST', path, { body: { email: 'x@example.com', password: 'x' } });
+    assert.strictEqual(res.status, 404, `${path} still exists`);
+  }
 
-  const noAuth = await fetch(BASE + '/me');
-  assert.strictEqual(noAuth.status, 401, 'me is reachable without a token');
+  // Google sign-in rejects anything it cannot verify with Google.
+  assert.strictEqual((await call('POST', '/auth/google', { body: {} })).status, 400,
+    'a missing credential was accepted');
+  const bogus = await call('POST', '/auth/google', { body: { credential: 'not-a-real-token' } });
+  assert.ok([401, 500].includes(bogus.status), `a bogus credential returned ${bogus.status}`);
+  assert.strictEqual(await prisma.user.count({ where: { email: 'not-a-real-token' } }), 0);
 
-  console.log('auth smoke test passed');
-})().catch((err) => {
-  console.error(err.message);
-  process.exit(1);
-});
+  await finish('auth');
+})().catch(fail);

@@ -1,17 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 const prisma = require('../lib/prisma');
 const auth = require('../middleware/auth');
 const { profileFor } = require('../lib/profile');
 
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 const signToken = (user) =>
   jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '24h' });
-
-// Mongoose normalized email/name via schema options; Prisma has no equivalent, so do it here.
-const normalizeEmail = (email) => email.trim().toLowerCase();
 
 const publicUser = (user) => ({
   id: user.id,
@@ -19,78 +18,68 @@ const publicUser = (user) => ({
   email: user.email,
   college: user.college,
   yearOfStudy: user.yearOfStudy,
-  creditBalance: user.creditBalance
+  avatarUrl: user.avatarUrl,
+  creditBalance: user.creditBalance,
+  // The client sends new users to the "finish setting up" step.
+  profileComplete: Boolean(user.college && user.yearOfStudy)
 });
 
-// Register user
-router.post('/register', [
-  check('name', 'Name is required').notEmpty(),
-  check('email', 'Please include a valid email').isEmail(),
-  check('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 })
+// Sign in with Google. The browser gets an ID token from Google and posts it
+// here; we verify its signature with Google before trusting anything in it.
+router.post('/google', [
+  check('credential', 'A Google credential is required').notEmpty()
 ], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    console.error('GOOGLE_CLIENT_ID is not set');
+    return res.status(500).json({ error: 'Google sign-in is not configured on the server' });
+  }
+
   try {
-    // Validate input
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { name, email, password, college, yearOfStudy } = req.body;
-
-    // Check if user already exists
-    const existing = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
-    if (existing) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
-
-    // Create new user (password hashed here — the mongoose pre-save hook is gone)
-    const user = await prisma.user.create({
-      data: {
-        name: name.trim(),
-        email: normalizeEmail(email),
-        password: await bcrypt.hash(password, 10),
-        college: college?.trim(),
-        yearOfStudy: yearOfStudy?.trim()
-      }
+    const ticket = await googleClient.verifyIdToken({
+      idToken: req.body.credential,
+      audience: process.env.GOOGLE_CLIENT_ID
     });
 
-    res.status(201).json({ token: signToken(user), user: publicUser(user) });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Login user
-router.post('/login', [
-  check('email', 'Please include a valid email').isEmail(),
-  check('password', 'Password is required').exists()
-], async (req, res) => {
-  try {
-    // Validate input
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+    const payload = ticket.getPayload();
+    if (!payload?.email_verified) {
+      return res.status(401).json({ error: 'That Google account has no verified email address' });
     }
 
-    const { email, password } = req.body;
+    const googleId = payload.sub;
+    const email = payload.email.trim().toLowerCase();
 
-    // Find user
-    const user = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
+    let user = await prisma.user.findUnique({ where: { googleId } });
+
     if (!user) {
-      return res.status(400).json({ error: 'Invalid credentials' });
-    }
+      // An account may predate Google sign-in, or have been created by an
+      // invite; match on email and attach the Google id rather than making a
+      // second account for the same person.
+      const existing = await prisma.user.findUnique({ where: { email } });
 
-    // Verify password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ error: 'Invalid credentials' });
+      user = existing
+        ? await prisma.user.update({
+            where: { id: existing.id },
+            data: { googleId, avatarUrl: payload.picture ?? existing.avatarUrl }
+          })
+        : await prisma.user.create({
+            data: {
+              googleId,
+              email,
+              name: payload.name?.trim() || email.split('@')[0],
+              avatarUrl: payload.picture
+            }
+          });
     }
 
     res.json({ token: signToken(user), user: publicUser(user) });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Google sign-in failed:', error.message);
+    res.status(401).json({ error: 'Could not verify that Google sign-in' });
   }
 });
 

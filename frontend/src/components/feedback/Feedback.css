@@ -1,0 +1,90 @@
+.toast-stack {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  pointer-events: none;
+}
+
+.toast {
+  min-width: 16rem;
+  max-width: 24rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 10px;
+  font-size: 0.925rem;
+  font-weight: 500;
+  color: var(--card-bg-color);
+  box-shadow: var(--glass-shadow);
+  animation: toast-in 0.22s ease;
+}
+
+.toast-success {
+  background-color: var(--primary-text);
+  color: var(--card-bg-color);
+}
+
+.toast-error {
+  background-color: #9B2C2C;
+  color: #FFFFFF;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: grid;
+  place-items: center;
+  background-color: rgba(3, 25, 38, 0.45);
+  padding: 1rem;
+}
+
+.confirm-box {
+  width: 100%;
+  max-width: 24rem;
+  background-color: var(--card-bg-color);
+  border-radius: 12px;
+  padding: 1.6rem;
+  box-shadow: 0 16px 40px rgba(3, 25, 38, 0.28);
+}
+
+.confirm-message {
+  margin: 0 0 1.4rem;
+  color: var(--primary-text);
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.confirm-cancel,
+.confirm-accept {
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  font-size: 0.925rem;
+  font-weight: 600;
+}
+
+.confirm-cancel {
+  background-color: var(--accent-light);
+  color: var(--primary-text);
+}
+
+.confirm-accept {
+  background-color: #9B2C2C;
+  color: #FFFFFF;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}

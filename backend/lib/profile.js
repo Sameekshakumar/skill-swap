@@ -12,7 +12,7 @@ const learnSkillsFor = async (userId) => {
   return skills.map((s) => s.skillName);
 };
 
-// The full user minus the password hash, with both skill lists attached.
+// The full user with both skill lists attached.
 const profileFor = async (userId) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -20,8 +20,12 @@ const profileFor = async (userId) => {
   });
   if (!user) return null;
 
-  const { password, ...rest } = user;
-  return { ...rest, skillsToLearn: await learnSkillsFor(userId) };
+  return {
+    ...user,
+    skillsToLearn: await learnSkillsFor(userId),
+    // Drives the "finish setting up" step after a first Google sign-in.
+    profileComplete: Boolean(user.college && user.yearOfStudy)
+  };
 };
 
 module.exports = { teachSkillsFor, learnSkillsFor, profileFor };

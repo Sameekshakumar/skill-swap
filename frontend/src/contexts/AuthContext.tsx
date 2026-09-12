@@ -8,8 +8,8 @@ interface AuthContextType {
   // True until the saved token has been checked, so ProtectedRoute doesn't
   // redirect to /login before the session has had a chance to restore.
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (userData: RegisterData) => Promise<void>;
+  // The browser obtains this credential from Google; the server verifies it.
+  loginWithGoogle: (credential: string) => Promise<User>;
   logout: () => void;
   // Re-reads the profile so the navigation bar's credit count stays accurate
   // after a booking, cancellation or completion.
@@ -23,14 +23,8 @@ interface User {
   creditBalance: number;
   college?: string;
   yearOfStudy?: string;
-}
-
-interface RegisterData {
-  name: string;
-  email: string;
-  password: string;
-  college?: string;
-  yearOfStudy?: string;
+  avatarUrl?: string;
+  profileComplete?: boolean;
 }
 
 interface LoginResponse {
@@ -72,34 +66,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
   }, []);
 
-    const login = async (email: string, password: string) => {
-    try {
-  // FIX 3: Use correct endpoint path
-  const response = await axios.post('/auth/login', { email, password });
-  const { user, token } = response?.data as LoginResponse;
-      setUser(user);
-      setToken(token);
-      // Store token in localStorage for persistence
-      localStorage.setItem('token', token);
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    }
-  };
+  const loginWithGoogle = async (credential: string) => {
+    const response = await axios.post('/auth/google', { credential });
+    const { user, token } = response?.data as LoginResponse;
 
-  const register = async (userData: RegisterData) => {
-    try {
-  // FIX 4: Use correct endpoint path
-  const response = await axios.post('/auth/register', userData);
-  const { user, token } = response?.data as LoginResponse;
-      setUser(user);
-      setToken(token);
-      // Store token in localStorage for persistence
-      localStorage.setItem('token', token);
-    } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
-    }
+    setUser(user);
+    setToken(token);
+    localStorage.setItem('token', token);
+    return user;
   };
 
   const refreshUser = async () => {
@@ -119,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated, loading, loginWithGoogle, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

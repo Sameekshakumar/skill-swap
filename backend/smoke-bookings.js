@@ -1,33 +1,7 @@
 // Smoke test for the Prisma-backed booking routes, focused on credit movement.
 // Run with the server up: node smoke-bookings.js
 const assert = require('assert');
-
-const BASE = `http://localhost:${process.env.PORT || 5001}/api`;
-
-const call = async (method, path, { token, body } = {}) => {
-  const res = await fetch(BASE + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    },
-    ...(body ? { body: JSON.stringify(body) } : {})
-  });
-  const text = await res.text();
-  try {
-    return { status: res.status, body: JSON.parse(text) };
-  } catch {
-    return { status: res.status, body: text };
-  }
-};
-
-const newUser = async (tag) => {
-  const res = await call('POST', '/auth/register', {
-    body: { name: `Smoke ${tag}`, email: `smoke-${tag}-${Date.now()}-${Math.random()}@example.com`, password: 'secret123' }
-  });
-  assert.strictEqual(res.status, 201, `register ${tag}: ${JSON.stringify(res.body)}`);
-  return { token: res.body.token, id: res.body.user.id };
-};
+const { call, newUser, finish, fail } = require('./smoke-helpers');
 
 const credits = async (token) => (await call('GET', '/profile', { token })).body.creditBalance;
 
@@ -142,9 +116,5 @@ const request = (learner, teacherId, skill, extra = {}) =>
   assert.ok(completed.body.some((b) => b.id === id), 'the completed session is missing');
   assert.strictEqual((await call('GET', '/bookings/cleanup-orphaned', { token: learner.token })).status, 404,
     'the retired cleanup endpoint still exists');
-
-  console.log('bookings smoke test passed');
-})().catch((err) => {
-  console.error(err.message);
-  process.exit(1);
-});
+  await finish('bookings');
+})().catch(fail);

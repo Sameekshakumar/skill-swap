@@ -1,33 +1,7 @@
 // Smoke test for the Prisma-backed review routes, focused on the rating aggregate.
 // Run with the server up: node smoke-reviews.js
 const assert = require('assert');
-
-const BASE = `http://localhost:${process.env.PORT || 5001}/api`;
-
-const call = async (method, path, { token, body } = {}) => {
-  const res = await fetch(BASE + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    },
-    ...(body ? { body: JSON.stringify(body) } : {})
-  });
-  const text = await res.text();
-  try {
-    return { status: res.status, body: JSON.parse(text) };
-  } catch {
-    return { status: res.status, body: text };
-  }
-};
-
-const newUser = async (tag) => {
-  const res = await call('POST', '/auth/register', {
-    body: { name: `Smoke ${tag}`, email: `smoke-${tag}-${Date.now()}-${Math.random()}@example.com`, password: 'secret123' }
-  });
-  assert.strictEqual(res.status, 201, `register ${tag}: ${JSON.stringify(res.body)}`);
-  return { token: res.body.token, id: res.body.user.id };
-};
+const { call, newUser, finish, fail } = require('./smoke-helpers');
 
 // GET /users/:id was removed, so read the aggregate from the user's own profile.
 const rating = async (token) => (await call('GET', '/profile', { token })).body;
@@ -136,9 +110,5 @@ const completedBooking = async (teacher, learner) => {
   // The reviewed booking drops off /pending.
   const after = await call('GET', '/reviews/pending', { token: learner.token });
   assert.ok(!after.body.some((p) => p.bookingId === bookingId), 'a reviewed booking is still pending');
-
-  console.log('reviews smoke test passed');
-})().catch((err) => {
-  console.error(err.message);
-  process.exit(1);
-});
+  await finish('reviews');
+})().catch(fail);

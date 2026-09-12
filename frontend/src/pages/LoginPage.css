@@ -114,3 +114,18 @@
 .register-link:hover {
   opacity: 0.8;
 }
+/* Google renders its own button; this just centres it. */
+.google-signin-row {
+  display: flex;
+  justify-content: center;
+  margin: 1.75rem 0 1.25rem;
+  min-height: 44px;
+}
+
+.login-footnote {
+  font-size: 0.85rem;
+  color: var(--secondary-text);
+  text-align: center;
+  line-height: 1.5;
+  margin: 0;
+}
