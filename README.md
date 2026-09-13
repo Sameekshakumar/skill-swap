@@ -1,142 +1,158 @@
-# Skill Swap Platform
+# Skill Swap
 
-A credit-based peer-to-peer skill exchange platform with separate frontend and backend.
+A credit-based skill exchange for students. Teach somebody something for an hour and you
+earn credits; spend those credits to learn something yourself. No money is involved, and
+nobody can take a lesson they have not earned.
 
-## Project Structure
+## How it works
+
+1. **List what you teach.** A skill, its level, a short description, and what an hour of it
+   is worth — between one and three credits. You can also list what you want to learn.
+2. **Request a session.** Browse what other students teach and ask for a time. Your credits
+   are set aside the moment you ask, so a session can never be booked without the credits to
+   cover it.
+3. **Both confirm.** After the session you each mark it complete. Only when both of you agree
+   do the credits reach the teacher. Then you can review each other.
+
+Everyone starts with 10 credits. Declining or cancelling a request refunds them in full.
+
+## Tech
+
+**Backend** — Node.js, Express, Prisma 6, PostgreSQL (hosted on Supabase).
+Sign-in is Google only, verified server-side with `google-auth-library`; the app issues its
+own JWT and stores no passwords.
+
+**Frontend** — React 18, TypeScript, Vite, React Router. Plain CSS, no UI framework.
+
+## Layout
 
 ```
-skill-swap/
-├── backend/              # Express.js API server
-│   ├── server.js
-│   ├── routes/
-│   ├── models/
-│   ├── middleware/
-│   ├── package.json
-│   ├── .env
-│   └── node_modules/
-├── frontend/             # React + Vite frontend
-│   ├── src/
-│   ├── index.html
-│   ├── vite.config.js
-│   ├── package.json
-│   └── node_modules/
-├── package.json          # Root scripts for convenience
-└── README.md
+backend/
+  routes/        auth, profile, users, bookings, reviews
+  middleware/    JWT verification
+  lib/           Prisma client, shared profile shape, HTTP errors
+  prisma/        schema and migrations
+  smoke-*.js     end-to-end checks against a running server
+frontend/
+  src/pages/     landing, login, welcome, discover, sessions, profile, teacher profile
+  src/components/
+  src/contexts/  auth, theme, in-page feedback
+  src/styles/    design system and the bridge onto it
 ```
 
-## Getting Started
-
-### Install Dependencies
-
-Install all dependencies for both backend and frontend:
+## Running it
 
 ```bash
-npm run install-all
+npm run install-all     # root, backend and frontend
+npm run dev             # backend on :5001, frontend on :3000
 ```
 
-Or manually:
+Open <http://localhost:3000>.
+
+### Environment
+
+`backend/.env` — **not** the repo root; `dotenv` resolves it from the backend directory.
+
+```env
+DATABASE_URL=postgresql://...        # Supabase session pooler connection string
+JWT_SECRET=...                       # any long random string
+PORT=5001
+GOOGLE_CLIENT_ID=...apps.googleusercontent.com
+```
+
+`frontend/.env`
+
+```env
+VITE_GOOGLE_CLIENT_ID=...apps.googleusercontent.com   # must match the backend
+```
+
+Both `.env` files are gitignored. The Google client ID is a public identifier, not a secret,
+and this sign-in method needs no client secret at all.
+
+### Google sign-in setup
+
+In the [Google Cloud console](https://console.cloud.google.com/): create a project, complete
+the Google Auth Platform setup, then create an OAuth **Web application** client with
+`http://localhost:3000` as an authorised JavaScript origin. Leave the redirect URIs empty —
+this flow does not use them. Copy the client ID into both `.env` files.
+
+While the app is unpublished, only accounts listed under **Audience → Test users** can sign
+in. Publishing lifts that, and needs no review for the basic profile and email scopes.
+
+### Database
+
+The schema lives in `backend/prisma/schema.prisma`.
 
 ```bash
-cd backend && npm install
-cd ../frontend && npm install
-cd ..
+cd backend
+npx prisma migrate dev --name <name>   # create and apply a migration
+npx prisma studio                      # browse the data
 ```
 
-### Development
+Use the Supabase **session pooler** connection string. The direct `db.<ref>.supabase.co`
+host has no IPv4 address, and Prisma's engine will not resolve an IPv6-only host — it fails
+with `P1001` even though the host is reachable.
 
-Start both backend (port 5001) and frontend (port 3000) simultaneously:
+Never pass the live database as `--shadow-database-url`. Prisma resets whatever it is given
+as a shadow database.
+
+## API
+
+All routes are under `/api`. Everything except `POST /auth/google` requires
+`Authorization: Bearer <token>`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/auth/google` | Exchange a Google credential for an app token |
+| GET | `/auth/me` | The signed-in user |
+| GET | `/profile` | Own profile, with both skill lists |
+| PUT | `/profile` | Update name, college, year, bio |
+| POST | `/profile/skills/teach` | Add a teaching skill |
+| DELETE | `/profile/skills/teach/:skillId` | Remove one |
+| POST | `/profile/skills/learn` | Add a skill you want to learn |
+| DELETE | `/profile/skills/learn/:skillName` | Remove one |
+| GET | `/users/teachers/search` | Search teachers — `query`, `level`, `maxRate`, `minRating`, `page`, `limit` |
+| GET | `/users/:id` | A teacher's public profile |
+| GET | `/bookings` | Everything you are part of |
+| POST | `/bookings` | Request a session |
+| POST | `/bookings/:id/accept` | Teacher accepts |
+| POST | `/bookings/:id/reject` | Teacher declines, credits refunded |
+| POST | `/bookings/:id/cancel` | Learner cancels, credits refunded |
+| POST | `/bookings/:id/complete` | Mark complete; credits move once both have |
+| GET | `/bookings/requests`, `/my-requests`, `/upcoming`, `/completed` | Filtered views |
+| POST | `/reviews` | Review the other person in a completed session |
+| GET | `/reviews/user/:userId`, `/received`, `/my-reviews`, `/pending` | Review lists |
+
+## Credits
+
+Every movement runs inside a database transaction:
+
+- **Requesting** debits the learner immediately and records a `Lock`.
+- **Declining, cancelling or resetting** refunds them.
+- **Completing** pays the teacher, but only once both sides confirm.
+
+Each state change is a conditional update that also matches on the current status, so only
+the caller that actually changes the status moves any credits. That is what stops a double
+refund or a double payout.
+
+A booking's price always comes from the teacher's own skill record, never from the request
+body.
+
+## Tests
+
+`backend/smoke-*.js` run against a live server and cover the real database.
 
 ```bash
 npm run dev
+cd backend && for f in smoke-*.js; do node $f || break; done
 ```
 
-Or run them separately:
+They create and clean up their own `smoke-*@example.com` accounts. Sign-in cannot be scripted
+through Google, so the helpers insert a user directly and mint the same token the server
+would issue — every route behind the token is still exercised.
 
-```bash
-# Terminal 1: Backend
-npm run backend
+## Notes
 
-# Terminal 2: Frontend
-npm run frontend
-```
-
-### Environment Variables
-
-Backend environment variables are in `backend/.env`:
-
-```env
-MONGO_URI=mongodb://localhost:27017/skillswap
-JWT_SECRET=skillswap_secret_key_2025
-PORT=5001
-```
-
-### Frontend API Configuration
-
-The frontend is configured to proxy API requests to the backend via Vite's proxy setting in `frontend/vite.config.js`:
-
-- Frontend runs on `http://localhost:3000`
-- Backend runs on `http://localhost:5001`
-- API requests to `/api/*` are proxied to `http://localhost:5001/api/*`
-
-## Build & Deploy
-
-### Build Frontend
-
-```bash
-npm run build
-```
-
-This creates an optimized production build in `frontend/dist/`.
-
-### Start Backend
-
-```bash
-npm start
-```
-
-This starts the backend server on the configured PORT (default 5001).
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Login user
-
-### Profile
-- `GET /api/profile` - Get user profile
-- `PUT /api/profile` - Update user profile
-- `POST /api/profile/skills/teach` - Add a teaching skill
-- `POST /api/profile/skills/learn` - Add a learning skill
-- `DELETE /api/profile/skills/teach/:skillId` - Remove a teaching skill
-- `DELETE /api/profile/skills/learn/:skillName` - Remove a learning skill
-
-### Bookings
-- `GET /api/bookings` - Get user's bookings
-- `POST /api/bookings` - Create a booking
-
-### Users
-- `GET /api/users` - List all users
-- `GET /api/users/:id` - Get user details
-
-## Technology Stack
-
-### Backend
-- Node.js + Express.js
-- MongoDB + Mongoose
-- JWT for authentication
-- bcryptjs for password hashing
-
-### Frontend
-- React 18
-- TypeScript
-- Vite
-- React Router
-- Axios
-- Tailwind CSS
-
-## Development Notes
-
-- Make sure MongoDB is running before starting the backend
-- The frontend proxy will only work in development mode
-- For production, the backend should serve the built frontend or they should be deployed separately
-
+- The frontend proxies `/api` to the backend in development (`frontend/vite.config.js`);
+  it is a dev-server feature and will not apply to a production build.
+- `frontend/npm run build` typechecks before building.
