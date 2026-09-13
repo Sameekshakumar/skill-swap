@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const prisma = require('../lib/prisma');
 
 const { teachSkillsFor, learnSkillsFor, profileFor } = require('../lib/profile');
+const { storeEmbeddingSafely } = require('../lib/skillSearch');
 
 const SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
 
@@ -58,7 +59,7 @@ router.post('/skills/teach', auth, [
   const { skillName, level, creditsPerHour, description } = req.body;
 
   try {
-    await prisma.skill.create({
+    const created = await prisma.skill.create({
       data: {
         skillName: skillName.trim(),
         level,
@@ -67,6 +68,10 @@ router.post('/skills/teach', auth, [
         userId: req.user.id
       }
     });
+
+    // Generated in the background: the skill is already saved, and search
+    // still finds it by keyword until the embedding lands.
+    storeEmbeddingSafely(created.id, created);
 
     res.json(await teachSkillsFor(req.user.id));
   } catch (err) {

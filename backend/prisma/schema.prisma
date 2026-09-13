@@ -66,6 +66,10 @@ model Skill {
   level          SkillLevel
   creditsPerHour Int        @default(1)
   description    String
+  // Meaning of the skill as a list of numbers, used for semantic search.
+  // Prisma has no native vector type, so it is read and written with raw SQL;
+  // see lib/embeddings.js and lib/skillSearch.js.
+  embedding      Unsupported("vector(384)")?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 

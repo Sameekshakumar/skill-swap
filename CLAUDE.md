@@ -178,6 +178,24 @@ and is range-checked. Tighten to a hard 400 if every booking should require a re
 
 ### Search
 
+Search is **hybrid**: every row is scored on keyword match and on meaning, and ranked on
+whichever is higher. Keyword alone misses anything phrased differently; meaning alone is
+vague when somebody types an exact skill name.
+
+Meaning comes from an embedding — a 384-number fingerprint of the skill, stored in
+`Skill.embedding` (pgvector) and compared with cosine distance. The model runs locally
+(`lib/embeddings.js`, `Xenova/all-MiniLM-L6-v2`), downloaded once into `node_modules`; there
+is no API key and no per-call cost.
+
+- Embeddings are written with raw SQL. Prisma has no vector type, so the column is
+  `Unsupported()` in the schema and invisible to the generated client — **never `SELECT s.*`
+  from `Skill` in a raw query**, or Prisma fails to deserialise the vector.
+- New skills are embedded in the background after saving, so a slow model never fails the
+  request. `node backfill-embeddings.js` fills in anything missing, `--all` redoes everything
+  after a model change.
+- The relevance floor in `lib/skillSearch.js` was measured, not guessed. Re-measure if the
+  model changes.
+
 `GET /api/users/teachers/search` filters and pages **in the database** — `query`, `level`,
 `maxRate`, `minRating`, `page`, `limit`, returning `{ results, total, page, hasMore }`. The
 page previously fetched a fixed slice and filtered it in the browser, which silently hid
