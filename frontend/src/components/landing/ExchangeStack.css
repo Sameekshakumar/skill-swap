@@ -2,7 +2,7 @@
    fan uses. The inner wrapper sticks in place while that height passes by. */
 .stack-section {
   position: relative;
-  height: 280vh;
+  height: 300vh;
 }
 
 .stack-sticky {
@@ -18,22 +18,21 @@
 
 .stack-head {
   text-align: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 4.5rem;
 }
 
 .stack-head .landing-eyebrow {
   margin-bottom: 0.75rem;
 }
 
-/* Cards are absolutely stacked on the same spot; only the front one reads until
-   scrolling swings the others out. The container reserves the height the fan
-   needs at full spread so nothing below it jumps. */
+/* A deck: every card occupies the same spot, the ones behind peeking out below
+   the front one. The container is only as tall as the deck, so nothing floats
+   up over the heading. */
 .stack-cards {
   position: relative;
   max-width: 54rem;
   margin: 0 auto;
-  /* Tall enough to hold the fan at full spread so nothing below it shifts. */
-  height: 29rem;
+  height: 14.5rem;
 }
 
 .stack-card {
@@ -44,16 +43,23 @@
   display: flex;
   align-items: flex-start;
   gap: 1.5rem;
-  padding: 1.75rem 2.25rem;
+  min-height: 11.5rem;
+  padding: 2rem 2.25rem;
+  box-sizing: border-box;
   border-radius: 18px;
-  background-color: var(--ss-glass-bg);
+  /* Opaque, unlike the glass used elsewhere: these cards overlap each other,
+     and a translucent surface lets the text behind bleed through. */
+  background-color: var(--ss-bg);
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ss-text) 7%, transparent),
+    color-mix(in srgb, var(--ss-text) 2%, transparent)
+  );
   border: 1px solid var(--ss-glass-border);
-  box-shadow: 0 24px 45px -18px var(--ss-glass-shadow);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 24px 45px -18px rgba(0, 0, 0, 0.45);
   /* Pivot near the left edge so the cards swing like fan blades rather than
      sliding straight down. */
-  transform-origin: 6% 50%;
+  transform-origin: 50% 20%;
   will-change: transform, opacity;
 }
 

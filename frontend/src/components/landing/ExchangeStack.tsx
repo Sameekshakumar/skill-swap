@@ -19,12 +19,12 @@ const CARDS = [
   }
 ];
 
-// The cards start stacked exactly on top of one another, so only the front one
-// is readable. Scrolling fans the ones behind it out like a hand of cards.
-//
-// Progress is taken from how far the tall outer section has travelled past the
-// sticky viewport, so the animation is driven by scroll position rather than
-// time — scroll back up and it closes again.
+const N = CARDS.length;
+
+// A rotating queue. The cards sit in a deck: one in front, the rest stacked
+// behind it. Scrolling advances the queue — the front card lifts away and the
+// one behind takes its place, while the card that left rejoins at the back.
+// 1 → 2 → 3 → 1, so the order keeps cycling.
 export default function ExchangeStack() {
   const section = useRef<HTMLDivElement>(null);
   const cards = useRef<Array<HTMLElement | null>>([]);
@@ -34,58 +34,85 @@ export default function ExchangeStack() {
     const narrow = window.matchMedia('(max-width: 900px)').matches;
 
     if (reduceMotion || narrow) {
-      // No stacking: the cards simply sit in a list and are all readable.
       section.current?.classList.add('stack-static');
       return;
     }
 
-    let frame = 0;
+    let raf = 0;
+    let current = 0; // eased value that chases the scroll
+    let target = 0;
 
-    const apply = () => {
-      frame = 0;
+    const readTarget = () => {
       const el = section.current;
       if (!el) return;
-
       const rect = el.getBoundingClientRect();
       const travel = rect.height - window.innerHeight;
       const progress = travel <= 0 ? 0 : Math.min(1, Math.max(0, -rect.top / travel));
+      target = progress * N;
+    };
+
+    const draw = () => {
+      // Chase the scroll rather than tracking it exactly: following raw scroll
+      // position 1:1 is what makes a pinned section feel stuck.
+      current += (target - current) * 0.12;
+      if (Math.abs(target - current) < 0.0005) current = target;
 
       cards.current.forEach((card, i) => {
         if (!card) return;
 
-        // The front card never moves; each one behind it gets its own slice of
-        // the scroll to swing out into.
-        // The last card finishes around three quarters of the way through, so
-        // the full fan is readable for a moment before the section releases.
-        const start = i === 0 ? 0 : 0.08 + (i - 1) * 0.3;
-        const t = i === 0 ? 1 : Math.min(1, Math.max(0, (progress - start) / 0.34));
-        const eased = t * t * (3 - 2 * t);
+        // How far this card sits behind the front of the queue, wrapped so the
+        // deck cycles instead of running out.
+        let depth = (((i - current) % N) + N) % N;
+        // Just past the front: treat it as leaving, so it lifts away instead of
+        // jumping straight to the back of the deck.
+        if (depth > N - 0.34) depth -= N;
 
-        // The rotation is the reveal, not the resting state: a card starts
-        // tucked behind the one in front at an angle, then swings flat as it
-        // slides out. Leaving it tilted would mean reading text on a slant.
-        const lift = eased * i * 162;
-        const angle = (1 - eased) * -9;
-        const scale = 1 - (1 - eased) * 0.07;
+        let x = 0;
+        let y: number;
+        let scale: number;
+        let opacity: number;
+        let rotate: number;
 
-        card.style.transform = `translate3d(0, ${lift}px, 0) rotate(${angle}deg) scale(${scale})`;
-        card.style.opacity = String(i === 0 ? 1 : 0.25 + eased * 0.75);
-        card.style.zIndex = String(10 - i);
+        if (depth < 0) {
+          // Leaving. It slides out sideways rather than upward: up would take
+          // it across the heading, and lingering on top of the incoming card
+          // leaves two half-transparent cards muddled together. The fade is
+          // deliberately quick so that overlap is brief.
+          const out = Math.min(1, -depth / 0.34);
+          x = -out * 110;
+          y = -out * 16;
+          scale = 1 - out * 0.04;
+          opacity = Math.max(0, 1 - out * 2.1);
+          rotate = -out * 2.5;
+        } else {
+          // Waiting in the deck, peeking out below the card in front. These
+          // stay fully opaque: dimming them with opacity would make the card
+          // itself see-through, and the text behind it would read straight
+          // through the front card. The opaque background does the hiding.
+          y = depth * 26;
+          scale = 1 - depth * 0.05;
+          opacity = 1;
+          rotate = depth * 0.9;
+        }
+
+        card.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale}) rotate(${rotate}deg)`;
+        card.style.opacity = String(opacity);
+        card.style.zIndex = String(Math.round(100 - depth * 10));
       });
+
+      raf = requestAnimationFrame(draw);
     };
 
-    const onScroll = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(apply);
-    };
+    readTarget();
+    current = target;
+    draw();
 
-    apply();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
+    window.addEventListener('scroll', readTarget, { passive: true });
+    window.addEventListener('resize', readTarget);
     return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', readTarget);
+      window.removeEventListener('resize', readTarget);
+      cancelAnimationFrame(raf);
     };
   }, []);
 
