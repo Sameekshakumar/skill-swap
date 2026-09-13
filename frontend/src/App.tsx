@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { FeedbackProvider } from './contexts/FeedbackContext';
 import Layout from './components/layout/Layout';
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import WelcomePage from './pages/WelcomePage';
 import SearchPage from './pages/SearchPage';
@@ -18,7 +19,8 @@ function App() {
         <AuthProvider>
           <FeedbackProvider>
             <Routes>
-              {/* Public route */}
+              {/* Public routes */}
+              <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
 
               {/* Signed in, but before the navigation bar makes sense */}
@@ -26,7 +28,7 @@ function App() {
 
               {/* Protected routes */}
               <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-                <Route path="/" element={<SearchPage />} />
+                <Route path="/discover" element={<SearchPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/teachers/:id" element={<TeacherProfilePage />} />

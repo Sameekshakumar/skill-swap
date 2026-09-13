@@ -1,0 +1,422 @@
+/* Landing page. The ambient layer sits behind everything, so nothing here may
+   take an opaque background — <body> paints the ground. */
+
+.landing {
+  position: relative;
+  min-height: 100vh;
+  color: var(--ss-text);
+}
+
+.landing-shell {
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 2rem;
+  box-sizing: border-box;
+}
+
+/* --- Scroll reveal --------------------------------------------------------
+   Sections lift into place as they arrive. useReveal adds is-visible, and
+   skips the whole thing under prefers-reduced-motion. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+              transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* --- Navigation ----------------------------------------------------------- */
+.landing-nav {
+  position: sticky;
+  top: 0.85rem;
+  z-index: 50;
+  margin: 0.85rem 1rem 0;
+  border-radius: 999px;
+  background-color: var(--ss-glass-bg);
+  border: 1px solid var(--ss-glass-border);
+  box-shadow: 0 10px 15px -3px var(--ss-glass-shadow);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+
+.landing-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0.85rem 0.7rem 1.5rem;
+}
+
+.landing-brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.landing-brand-name {
+  font-family: var(--ss-font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--brand-ink);
+}
+
+.landing-brand-sub {
+  font-size: 0.75rem;
+  color: var(--ss-text-muted);
+}
+
+.landing-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.landing-icon-btn {
+  width: 2.35rem;
+  height: 2.35rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--ss-glass-border);
+  background-color: var(--ss-glass-bg);
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+.landing-icon-btn:hover {
+  background-color: var(--glass-bg-hover);
+}
+
+.landing-toggle-icon {
+  height: 1.1rem;
+  width: 1.1rem;
+  background-color: var(--nav-text);
+}
+
+:root[data-theme='dark'] .landing-toggle-icon {
+  transform: rotate(180deg);
+}
+
+/* --- Buttons -------------------------------------------------------------- */
+.landing-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 1.35rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.landing-cta:active {
+  transform: translateY(1px);
+}
+
+.landing-cta-solid {
+  color: var(--ss-accent-fg);
+  background: color-mix(in srgb, var(--ss-accent) 88%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--ss-accent) 28%, transparent);
+}
+
+.landing-cta-solid:hover {
+  background: var(--ss-accent);
+}
+
+.landing-cta-ghost {
+  color: var(--ss-text);
+  background-color: var(--ss-glass-bg);
+  border: 1px solid var(--ss-glass-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.landing-cta-ghost:hover {
+  background-color: var(--glass-bg-hover);
+}
+
+.landing-cta-large {
+  padding: 0.9rem 2rem;
+  font-size: 1.05rem;
+  margin-top: 1.75rem;
+}
+
+/* --- Hero ----------------------------------------------------------------- */
+.landing-hero {
+  /* Fills the first screen so the fanning cards below are a deliberate scroll,
+     not something half-visible at the fold. */
+  min-height: calc(100vh - 5rem);
+  display: flex;
+  align-items: center;
+  padding: 4rem 0 5rem;
+}
+
+/* One centred column spanning the page rather than a left-hand slab. */
+.landing-hero-inner {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.landing-title {
+  font-family: var(--ss-font-display);
+  font-size: clamp(2.6rem, 6.4vw, 5.25rem);
+  line-height: 1.06;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ss-text);
+  margin: 0;
+}
+
+/* Each line is its own block so the phrasing breaks where it should rather
+   than wherever the column happens to run out. */
+.landing-title span,
+.landing-title em {
+  display: block;
+  text-wrap: nowrap;
+}
+
+/* The middle line carries the pale blue, as in the reference. */
+.landing-title em {
+  font-style: italic;
+  color: var(--ss-blue-mid);
+}
+
+:root[data-theme='light'] .landing-title em,
+:root:not([data-theme='dark']) .landing-title em {
+  color: var(--ss-accent);
+}
+
+.landing-lede {
+  margin: 1.6rem 0 0;
+  font-size: 1.075rem;
+  line-height: 1.65;
+  color: var(--ss-text-muted);
+  max-width: 44rem;
+}
+
+.landing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2.5rem;
+  justify-content: center;
+}
+
+/* --- Sections ------------------------------------------------------------- */
+.landing-section {
+  padding: 5rem 0;
+}
+
+.landing-section-alt {
+  border-top: 1px solid var(--ss-glass-border);
+  border-bottom: 1px solid var(--ss-glass-border);
+}
+
+.landing-section-head {
+  max-width: 42rem;
+  margin: 0 auto 3rem;
+  text-align: center;
+}
+
+.landing-eyebrow {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ss-accent);
+  margin-bottom: 0.9rem;
+}
+
+.landing-h2 {
+  font-family: var(--ss-font-display);
+  font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--ss-text);
+  margin: 0;
+}
+
+.landing-h2 em {
+  font-style: italic;
+  color: var(--ss-blue-mid);
+}
+
+:root[data-theme='light'] .landing-h2 em,
+:root:not([data-theme='dark']) .landing-h2 em {
+  color: var(--ss-accent);
+}
+
+.landing-section-lede {
+  margin: 1rem auto 0;
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: var(--ss-text-muted);
+  max-width: 36rem;
+}
+
+/* --- Steps ---------------------------------------------------------------- */
+.landing-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.landing-step {
+  padding: 1.85rem 1.6rem;
+  border-radius: 16px;
+  background-color: var(--ss-glass-bg);
+  border: 1px solid var(--ss-glass-border);
+  box-shadow: 0 10px 15px -3px var(--ss-glass-shadow);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.landing-step-n {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ss-accent);
+  margin-bottom: 0.9rem;
+}
+
+.landing-step h3 {
+  margin: 0 0 0.6rem;
+  font-family: var(--ss-font-display);
+  font-size: 1.22rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ss-text);
+}
+
+.landing-step p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--ss-text-muted);
+}
+
+/* --- Credit rules --------------------------------------------------------- */
+.landing-rules {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.landing-rule {
+  padding: 1.6rem;
+  border-radius: 16px;
+  text-align: center;
+  background-color: var(--ss-glass-bg);
+  border: 1px solid var(--ss-glass-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.landing-rule-label {
+  margin: 0 0 0.55rem;
+  font-size: 0.88rem;
+  color: var(--ss-text-muted);
+}
+
+.landing-rule-value {
+  margin: 0;
+  font-family: var(--ss-font-display);
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ss-accent);
+}
+
+.landing-rule-value span {
+  display: block;
+  margin-top: 0.45rem;
+  font-family: var(--ss-font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--ss-text-muted);
+}
+
+.landing-note {
+  margin: 2.25rem auto 0;
+  max-width: 44rem;
+  text-align: center;
+  font-size: 0.98rem;
+  line-height: 1.65;
+  color: var(--ss-text-muted);
+}
+
+/* --- Closing -------------------------------------------------------------- */
+.landing-closing {
+  text-align: center;
+  padding: 6rem 0;
+}
+
+.landing-closing-title {
+  margin-bottom: 0;
+}
+
+.landing-closing .landing-section-lede {
+  margin-top: 1rem;
+}
+
+/* --- Footer --------------------------------------------------------------- */
+.landing-footer {
+  border-top: 1px solid var(--ss-glass-border);
+  padding: 2rem 0 3rem;
+}
+
+.landing-footer .landing-shell {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+  color: var(--ss-text-muted);
+}
+
+/* --- Narrow screens ------------------------------------------------------- */
+@media (max-width: 1100px) {
+  .landing-title span,
+  .landing-title em {
+    text-wrap: balance;
+  }
+}
+
+@media (max-width: 900px) {
+  .landing-steps,
+  .landing-rules {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-hero {
+    padding: 3.5rem 0 4rem;
+  }
+
+  .landing-shell {
+    padding: 0 1.25rem;
+  }
+}

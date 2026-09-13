@@ -59,7 +59,7 @@ export default function TeacherProfilePage() {
       <div className="teacher-page-container">
         <div className="page-shell">
           <p className="teacher-status">{error || 'That person could not be found.'}</p>
-          <Link to="/" className="teacher-back">Back to Discover</Link>
+          <Link to="/discover" className="teacher-back">Back to Discover</Link>
         </div>
       </div>
     );

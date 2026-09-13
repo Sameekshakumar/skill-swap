@@ -24,7 +24,10 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
-  overflow-x: hidden;
+  /* `clip` rather than `hidden`: overflow-x: hidden turns these into scroll
+     containers, which silently stops position: sticky from working anywhere
+     inside the page. */
+  overflow-x: clip;
 }
 
 body {
