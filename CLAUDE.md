@@ -120,6 +120,9 @@ which is where the old `/` app view now lives. `/login`, `/welcome`, `/dashboard
 - Headings use `--ss-font-display` (Playfair Display, loaded in `index.html`); body copy
   stays sans. Panels use the one glass recipe listed in `theme.css`, never a flat fill.
 - Icons should use the `.ss-icon` mask so one black PNG serves both themes and any colour.
+- **Never use `overflow-x: hidden` on `html` or `body`.** It turns them into scroll
+  containers, which silently stops `position: sticky` working anywhere on the page — that is
+  what broke the landing page's card stack. `overflow-x: clip` clips without that side effect.
 - `hooks/useReveal.ts` fades `[data-reveal]` elements in on scroll. Pass it a `ready` flag —
   it runs before a component's early returns, so without one the observer looks for elements
   during the loading render, finds none, and leaves the page stuck at opacity 0.

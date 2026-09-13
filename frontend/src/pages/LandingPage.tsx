@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useReveal } from '../hooks/useReveal';
 import { AmbientBackground } from '../components/layout/AmbientBackground';
+import ExchangeStack from '../components/landing/ExchangeStack';
 import nightModeIcon from '../assets/night-mode.png';
 import './LandingPage.css';
 
@@ -72,57 +73,27 @@ export default function LandingPage() {
       <main>
         {/* Hero */}
         <section className="landing-hero">
-          <div className="landing-shell landing-hero-grid">
-            <div className="landing-hero-copy" data-reveal>
-              <h1 className="landing-title">
-                <span>Trade what you know</span>
-                <em>for what you want</em>
-                <span>to learn</span>
-              </h1>
-              <p className="landing-lede">
-                Skill Swap is a credit-based exchange for students. An hour of teaching earns
-                credits; an hour of learning spends them. No money changes hands, and nobody
-                can take a lesson they have not earned.
-              </p>
-              <div className="landing-actions">
-                <Link to="/login" className="landing-cta landing-cta-solid">
-                  Get started with Google
-                </Link>
-                <a href="#how" className="landing-cta landing-cta-ghost">How it works</a>
-              </div>
-            </div>
-
-            <div className="landing-panel" data-reveal>
-              <div className="landing-panel-head">
-                <span>One exchange</span>
-                <span className="landing-dots" aria-hidden="true"><i /><i /><i /></span>
-              </div>
-              <ol className="landing-flow">
-                <li>
-                  <span className="landing-flow-badge">01</span>
-                  <div>
-                    <h3>Ravi asks Asha for guitar</h3>
-                    <p>2 credits/hour × 2 hours — 4 credits set aside</p>
-                  </div>
-                </li>
-                <li>
-                  <span className="landing-flow-badge">02</span>
-                  <div>
-                    <h3>Asha accepts</h3>
-                    <p>The session is confirmed and shows in both calendars</p>
-                  </div>
-                </li>
-                <li>
-                  <span className="landing-flow-badge">03</span>
-                  <div>
-                    <h3>Both mark it complete</h3>
-                    <p>4 credits move to Asha. Ravi can now teach to earn them back</p>
-                  </div>
-                </li>
-              </ol>
+          <div className="landing-shell landing-hero-inner" data-reveal>
+            <h1 className="landing-title">
+              <span>Trade what you know</span>
+              <em>for what you want</em>
+              <span>to learn</span>
+            </h1>
+            <p className="landing-lede">
+              Skill Swap is a credit-based exchange for students. An hour of teaching earns
+              credits; an hour of learning spends them. No money changes hands, and nobody
+              can take a lesson they have not earned.
+            </p>
+            <div className="landing-actions">
+              <Link to="/login" className="landing-cta landing-cta-solid">
+                Get started with Google
+              </Link>
+              <a href="#how" className="landing-cta landing-cta-ghost">How it works</a>
             </div>
           </div>
         </section>
+
+        <ExchangeStack />
 
         {/* How it works */}
         <section className="landing-section" id="how">
