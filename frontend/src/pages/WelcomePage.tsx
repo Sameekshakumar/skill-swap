@@ -33,7 +33,7 @@ export default function WelcomePage() {
     try {
       await axios.put('/profile', { college: college.trim(), yearOfStudy, bio: bio.trim() })
       await refreshUser()
-      navigate('/')
+      navigate('/discover')
     } catch (err) {
       setError(handleApiError(err))
     } finally {

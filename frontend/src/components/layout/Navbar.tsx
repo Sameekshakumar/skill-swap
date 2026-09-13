@@ -5,7 +5,7 @@ import nightModeIcon from '../../assets/night-mode.png';
 import './Navbar.css';
 
 const links = [
-  { to: '/', label: 'Discover' },
+  { to: '/discover', label: 'Discover' },
   { to: '/dashboard', label: 'My Sessions' },
   { to: '/profile', label: 'My Profile' }
 ];
@@ -17,7 +17,7 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-inner">
-        <Link to="/" className="navbar-brand">Skill Swap</Link>
+        <Link to="/discover" className="navbar-brand">Skill Swap</Link>
 
         <div className="navbar-actions">
           <button
@@ -46,7 +46,6 @@ export default function Navbar() {
             <NavLink
               key={link.to}
               to={link.to}
-              end={link.to === '/'}
               className={({ isActive }) => `glass-pill nav-link${isActive ? ' active' : ''}`}
             >
               {link.label}

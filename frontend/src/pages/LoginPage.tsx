@@ -19,7 +19,7 @@ export default function LoginPage() {
     try {
       const signedIn = await loginWithGoogle(credential, remember)
       // First time here: collect the details Google cannot give us.
-      navigate(signedIn.profileComplete ? '/' : '/welcome')
+      navigate(signedIn.profileComplete ? '/discover' : '/welcome')
     } catch (err) {
       setError(handleApiError(err))
     }
@@ -32,7 +32,7 @@ export default function LoginPage() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to={user?.profileComplete === false ? '/welcome' : '/'} replace />
+    return <Navigate to={user?.profileComplete === false ? '/welcome' : '/discover'} replace />
   }
 
   return (
