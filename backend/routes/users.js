@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const auth = require('../middleware/auth');
+const { searchSkills } = require('../lib/skillSearch');
 
 const PAGE_SIZE = 12;
 const MAX_PAGE_SIZE = 50;
@@ -16,50 +17,31 @@ router.get('/teachers/search', auth, async (req, res) => {
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(req.query.limit) || PAGE_SIZE));
 
-    const where = {
-      // You cannot book yourself, so your own listings are never results.
-      userId: { not: req.user.id }
-    };
-
-    if (query) {
-      const contains = { contains: query, mode: 'insensitive' };
-      where.OR = [
-        { skillName: contains },
-        { description: contains },
-        { user: { name: contains } }
-      ];
-    }
-
-    if (level) where.level = level;
-    if (maxRate) where.creditsPerHour = { lte: Number(maxRate) };
-    if (minRating) where.user = { ...(where.user || {}), rating: { gte: Number(minRating) } };
-
-    const [total, skills] = await Promise.all([
-      prisma.skill.count({ where }),
-      prisma.skill.findMany({
-        where,
-        include: { user: true },
-        orderBy: [{ user: { rating: 'desc' } }, { createdAt: 'desc' }],
-        skip: (page - 1) * limit,
-        take: limit
-      })
-    ]);
+    const { rows, total } = await searchSkills({
+      viewerId: req.user.id,
+      query,
+      level,
+      maxRate,
+      minRating,
+      page,
+      limit
+    });
 
     res.json({
-      results: skills.map((s) => ({
-        skillId: s.id,
-        teacherId: s.user.id,
-        teacherName: s.user.name,
-        teacherCollege: s.user.college,
-        teacherYear: s.user.yearOfStudy,
-        teacherBio: s.user.bio,
-        teacherAvatar: s.user.avatarUrl,
-        skillName: s.skillName,
-        level: s.level,
-        creditsPerHour: s.creditsPerHour,
-        description: s.description,
-        teacherRating: s.user.rating,
-        teacherReviews: s.user.reviewCount
+      results: rows.map((row) => ({
+        skillId: row.id,
+        teacherId: row.uid,
+        teacherName: row.name,
+        teacherCollege: row.college,
+        teacherYear: row.yearOfStudy,
+        teacherBio: row.bio,
+        teacherAvatar: row.avatarUrl,
+        skillName: row.skillName,
+        level: row.level,
+        creditsPerHour: row.creditsPerHour,
+        description: row.description,
+        teacherRating: row.rating,
+        teacherReviews: row.reviewCount
       })),
       total,
       page,
