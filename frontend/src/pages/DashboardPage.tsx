@@ -198,7 +198,8 @@ export default function DashboardPage() {
             </>
           )}
           
-          {(booking.status === 'Requested' || booking.status === 'Confirmed') && !isTeacher && (
+          {(booking.status === 'Requested' || booking.status === 'Confirmed') && !isTeacher &&
+            !booking.completedByLearner && !booking.completedByTeacher && (
             <button
               className="action-btn cancel-btn"
               onClick={() => handleCancel(booking.id)}

@@ -227,7 +227,17 @@ const cancelWithRefund = async (bookingId, cancelledBy, description) => {
     const booking = await tx.booking.findUnique({ where: { id: bookingId } });
 
     const cancelled = await tx.booking.updateMany({
-      where: { id: bookingId, status: { in: ['Requested', 'Confirmed'] } },
+      where: {
+        id: bookingId,
+        status: { in: ['Requested', 'Confirmed'] },
+        // Once either side has marked the session complete, cancelling would
+        // refund the learner while denying the teacher a payout they may
+        // already be owed. A Requested booking can never have either flag
+        // set (completion requires status Confirmed), so this is a no-op
+        // for the reject path and only actually guards cancel.
+        completedByLearner: false,
+        completedByTeacher: false
+      },
       data: { status: 'Cancelled', cancelledBy }
     });
     if (cancelled.count === 0) {
@@ -294,6 +304,9 @@ router.post('/:id/cancel', authenticateToken, async (req, res) => {
     // cancelled booking refunded the learner a second time.
     if (booking.status === 'Cancelled') {
       return res.status(400).json({ error: 'Booking is already cancelled' });
+    }
+    if (booking.completedByLearner || booking.completedByTeacher) {
+      return res.status(400).json({ error: 'Cannot cancel a session that has already been marked complete' });
     }
 
     res.json(await cancelWithRefund(

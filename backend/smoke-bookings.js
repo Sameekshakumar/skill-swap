@@ -68,6 +68,28 @@ const request = (learner, teacherId, skill, extra = {}) =>
   assert.strictEqual(again.status, 400, 'an already-cancelled booking was cancelled again');
   assert.strictEqual(await credits(l2.token), 10, 'cancelling twice refunded twice');
 
+  // --- a confirmed session neither side has completed can still be cancelled ---
+  const l6 = await newUser('confirmed-cancel');
+  const b6 = await request(l6, teacher.id, 'Guitar');
+  assert.strictEqual((await call('POST', `/bookings/${b6.body.id}/accept`, { token: teacher.token })).status, 200);
+  assert.strictEqual(await credits(l6.token), 6);
+  assert.strictEqual((await call('POST', `/bookings/${b6.body.id}/cancel`, { token: l6.token })).status, 200,
+    'a confirmed, not-yet-completed session could not be cancelled');
+  assert.strictEqual(await credits(l6.token), 10, 'cancelling a confirmed session did not refund');
+
+  // --- once either side marks complete, cancelling is blocked ---
+  const l7 = await newUser('half-complete');
+  const b7 = await request(l7, teacher.id, 'Guitar');
+  assert.strictEqual((await call('POST', `/bookings/${b7.body.id}/accept`, { token: teacher.token })).status, 200);
+  assert.strictEqual((await call('POST', `/bookings/${b7.body.id}/complete`, { token: l7.token, body: { completedBy: 'learner' } })).status, 200);
+  assert.strictEqual(await credits(l7.token), 6, 'marking complete alone should not refund or pay out');
+  const blockedCancel = await call('POST', `/bookings/${b7.body.id}/cancel`, { token: l7.token });
+  assert.strictEqual(blockedCancel.status, 400, 'a session already marked complete by one side was still cancellable');
+  assert.strictEqual(await credits(l7.token), 6, 'a blocked cancel still refunded credits');
+  const stillConfirmed = await call('GET', '/bookings', { token: l7.token });
+  assert.strictEqual(stillConfirmed.body.find((b) => b.id === b7.body.id).status, 'Confirmed',
+    'the booking status changed despite the cancel being blocked');
+
   // --- rejecting refunds exactly once ---
   const l3 = await newUser('reject');
   const b3 = await request(l3, teacher.id, 'Guitar');
