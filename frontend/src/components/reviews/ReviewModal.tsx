@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from '../../utils/axios';
+import { handleApiError } from '../../utils/helpers';
 import './ReviewModal.css';
 
 interface ReviewModalProps {
@@ -40,8 +41,8 @@ const ReviewModal = ({
       setRating(5);
       onSubmit();
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to submit review');
+    } catch (err) {
+      setError(handleApiError(err));
     } finally {
       setLoading(false);
     }
@@ -72,7 +73,7 @@ const ReviewModal = ({
                     onClick={() => setRating(star)}
                     aria-label={`${star} out of 5`}
                   >
-                    {star}
+                    ★
                   </button>
                 ))}
               </div>

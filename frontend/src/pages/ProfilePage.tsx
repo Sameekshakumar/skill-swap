@@ -269,6 +269,7 @@ const ProfilePage = () => {
         bio: response.data.bio
       } : null);
       setIsEditing(false);
+      await refreshUser();
     } catch (err) {
       setError(handleApiError(err));
     }

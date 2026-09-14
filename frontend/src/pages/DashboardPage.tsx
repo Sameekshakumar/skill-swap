@@ -198,23 +198,23 @@ export default function DashboardPage() {
             </>
           )}
           
-          {booking.status === 'Requested' && !isTeacher && (
-            <button 
+          {(booking.status === 'Requested' || booking.status === 'Confirmed') && !isTeacher && (
+            <button
               className="action-btn cancel-btn"
               onClick={() => handleCancel(booking.id)}
               disabled={actionLoading === booking.id}
             >
-              Cancel Request
+              {booking.status === 'Requested' ? 'Cancel Request' : 'Cancel Session'}
             </button>
           )}
 
           {booking.status === 'Confirmed' && (
-            <button 
+            <button
               className="action-btn complete-btn"
               onClick={() => handleComplete(booking.id, isTeacher ? 'teacher' : 'learner')}
-              disabled={actionLoading === booking.id}
+              disabled={actionLoading === booking.id || (isTeacher ? booking.completedByTeacher : booking.completedByLearner)}
             >
-              {isTeacher ? booking.completedByTeacher ? 'Marked Complete by You' : 'Mark Complete' 
+              {isTeacher ? booking.completedByTeacher ? 'Marked Complete by You' : 'Mark Complete'
                        : booking.completedByLearner ? 'Marked Complete by You' : 'Mark Complete'}
             </button>
           )}

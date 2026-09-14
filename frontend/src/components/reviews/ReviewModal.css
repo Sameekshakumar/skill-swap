@@ -21,6 +21,10 @@
   max-height: 90vh;
   overflow-y: auto;
   animation: slideUp 0.3s ease-out;
+  /* This modal is always a white surface, regardless of the app's light/dark
+     theme. Without this, the browser applies its own dark-mode styling to
+     native controls (like the textarea below) whenever the app is dark. */
+  color-scheme: light;
 }
 
 @keyframes slideUp {
@@ -105,15 +109,19 @@
   border: none;
   font-size: 2rem;
   cursor: pointer;
-  opacity: 0.3;
-  transition: opacity 0.2s;
+  color: #d1d5db;
+  transition: color 0.15s ease, transform 0.1s ease;
   padding: 0;
   line-height: 1;
 }
 
-.star:hover,
+.star:hover {
+  color: #fbbf24;
+  transform: scale(1.08);
+}
+
 .star.active {
-  opacity: 1;
+  color: #f59e0b;
 }
 
 .rating-text {
@@ -131,6 +139,12 @@ textarea {
   font-size: 1rem;
   resize: none;
   font-size: 0.875rem;
+  background-color: #ffffff;
+  color: #1f2937;
+}
+
+textarea::placeholder {
+  color: #9ca3af;
 }
 
 textarea:focus {
