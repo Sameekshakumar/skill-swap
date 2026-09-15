@@ -141,6 +141,7 @@ textarea {
   font-size: 0.875rem;
   background-color: #ffffff;
   color: #1f2937;
+  box-sizing: border-box;
 }
 
 textarea::placeholder {
@@ -201,12 +202,13 @@ textarea:focus {
 }
 
 .btn-secondary {
-  background-color: #f3f4f6;
+  background-color: #e5e7eb;
   color: #1f2937;
+  border: 1px solid #d1d5db;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: #e5e7eb;
+  background-color: #d1d5db;
 }
 
 .btn-secondary:disabled {
