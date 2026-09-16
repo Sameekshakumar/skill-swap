@@ -52,15 +52,13 @@ Frontend calls relative `/api`; Vite proxies to `localhost:5001` (`frontend/vite
 working directory, not the repo root. Keys: `DATABASE_URL`, `JWT_SECRET`, `PORT`.
 Both `.env` files are gitignored — never commit them.
 
-## Postgres migration (branch `postgres-migration`)
+## Database and migrations
 
-**Backend migration is complete.** Prisma 6 + Supabase Postgres. Prisma 7 is **not** usable here without extra
-wiring (it dropped `url` from `datasource` and needs a driver adapter) — both deps are pinned `^6`.
+Prisma 6 + Supabase Postgres. Prisma 7 is **not** usable here without extra wiring (it dropped
+`url` from `datasource` and needs a driver adapter) — both deps are pinned `^6`.
 
-All five route files, the auth middleware, and `server.js` are on Prisma. `mongoose` is
-uninstalled and `backend/models/` is deleted — the schema lives in `prisma/schema.prisma` now.
-
-The frontend reads `id` throughout; the migration is finished end to end.
+Everything below reflects the app as it stands. `mongoose` is gone, the schema lives in
+`prisma/schema.prisma`, and the frontend reads `id` throughout.
 
 ### Migration workflow
 
@@ -88,7 +86,7 @@ engine will not resolve an AAAA-only host — it fails `P1001` even though plain
 host works. The pooler also fixes `migrate dev`, which could not create its shadow database
 over the direct connection.
 
-### Conventions once migrated
+### Conventions
 
 - Password hashing is explicit (`bcrypt.hash(password, 10)` at the call site) — the mongoose
   `pre('save')` hook is gone. Any route that sets a password must hash it itself.
@@ -214,3 +212,65 @@ Your own listings are excluded server side — you cannot book yourself.
 `smoke-helpers.js` holds the shared `call`/`newUser`/`cleanup`. Tests cannot sign in through
 Google, so `newUser` inserts a user directly and mints the same JWT the server would issue.
 Each suite deletes its own `smoke-*@example.com` rows on the way out, pass or fail.
+
+## Where things stand
+
+Last worked on: 16 September 2026. Everything described above is merged to `main` except the
+`cleanup-sweep` branch, which is pushed and awaiting a PR.
+
+**Done and verified end to end:** the Mongo → Prisma/Postgres migration, Google-only sign-in,
+credit-safe bookings, reviews, semantic search, the public landing page, the design system
+rebrand, and booking from a teacher's profile. All six smoke suites pass against the live
+database.
+
+### Open, roughly in priority order
+
+1. **The Google app is still in Testing mode.** Only emails listed under Google Auth Platform →
+   Audience → Test users can sign in; anyone else gets "access blocked". Publishing needs a real
+   deployed URL for the Branding page, so this unblocks itself at deploy time. 100-user cap
+   until then, counted over the app's lifetime.
+2. **Nothing is deployed.** Localhost only. Deploying is what unlocks (1), and the frontend
+   proxies `/api` via the Vite dev server — that is a dev-only feature and needs replacing with
+   a real API base URL in production.
+3. **Redis was discussed and never justified.** Queries are indexed and fast, sessions are JWTs
+   with nothing to store. Don't add it without a concrete job; if it is needed for a writeup,
+   pick a real one (caching search results, rate-limiting bookings) rather than bolting it on.
+4. **The embedding model is small and it shows.** "something about maths" does not find
+   Calculus. If misses like that pile up, swap `lib/embeddings.js` for a hosted embedding API —
+   it is deliberately one file, and the relevance floor in `lib/skillSearch.js` must be
+   re-measured afterwards.
+5. **Local branch `sams-branch`** holds one orphan commit ("Create README.md") that was never
+   pushed. The README has been rewritten since, so it is almost certainly obsolete.
+
+### Traps worth remembering
+
+These each cost real time once, and none of them produce an error message.
+
+- **Never pass the live database as `--shadow-database-url`.** Prisma resets whatever it is
+  given as a shadow database. This wiped the database once.
+- **Colour written into a page or component stylesheet beats the theme**, because page styles
+  are imported later and specificity ties. This caused four separate "you didn't change it"
+  rounds. Colour goes in `styles/theme.css`.
+- **`overflow-x: hidden` on `html` or `body` silently disables `position: sticky`** everywhere
+  on the page. Use `clip`.
+- **Never `SELECT s.*` from `Skill` in a raw query.** The embedding column is a vector and
+  Prisma cannot deserialise it.
+- **Google One Tap can silently sign the browser back in as the real user**, overriding a test
+  session injected into localStorage. Check which account you are actually looking at before
+  trusting what is on screen.
+- **Test accounts are `smoke-*@example.com` and `uicheck-*@example.com`.** Clean them up —
+  an interrupted run once left three fake teachers showing in Discover.
+
+### Testing
+
+The smoke suites need a live server and hit the real database. They cannot sign in through
+Google, so `smoke-helpers.js` inserts a user directly and mints the same JWT the server would.
+
+```
+npm run dev
+cd backend && for f in smoke-*.js; do node $f || break; done
+```
+
+If the database is unreachable, check the network before the code: campus WiFi blocks outbound
+5432 and 6543 while leaving 443 open, which looks exactly like a dead project. A phone hotspot
+confirms it in seconds.
