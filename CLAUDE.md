@@ -7,8 +7,6 @@ Credit-based peer-to-peer skill exchange. Students list skills to teach/learn, b
 ```
 backend/    Express API (server.js, routes/, middleware/, lib/, prisma/)
 frontend/   React 18 + TS + Vite + Tailwind 4
-src/pages/  LEFTOVER from the pre-split layout — see MIGRATION_GUIDE.md
-public/     LEFTOVER, same
 ```
 
 Root `package.json` is scripts only (`concurrently`).
@@ -120,6 +118,10 @@ which is where the old `/` app view now lives. `/login`, `/welcome`, `/dashboard
 - Headings use `--ss-font-display` (Playfair Display, loaded in `index.html`); body copy
   stays sans. Panels use the one glass recipe listed in `theme.css`, never a flat fill.
 - Icons should use the `.ss-icon` mask so one black PNG serves both themes and any colour.
+- **Colour belongs in `styles/theme.css`, never in a page or component stylesheet.** A local
+  declaration wins on equal specificity because page styles are imported later, so the theme
+  silently loses. Status and action colours are tokens too (`--status-*`, `--action-*`) —
+  distinct hues, but themed.
 - **Never use `overflow-x: hidden` on `html` or `body`.** It turns them into scroll
   containers, which silently stops `position: sticky` working anywhere on the page — that is
   what broke the landing page's card stack. `overflow-x: clip` clips without that side effect.
