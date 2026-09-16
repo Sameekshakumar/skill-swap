@@ -244,11 +244,16 @@ export default function SearchPage() {
                       <span>{teacher.creditRate} credits/hr</span>
                     </span>
                     <div className="rating">
-                      <span className="rating-text">
-                        {teacher.reviews > 0
-                          ? `${teacher.rating} out of 5 · ${teacher.reviews} reviews`
-                          : 'No reviews yet'}
-                      </span>
+                      {teacher.reviews > 0 ? (
+                        <Link to={`/teachers/${teacher.id}`} className="rating-link">
+                          <span>{teacher.rating} out of 5</span>
+                          <span className="rating-count">
+                            · {teacher.reviews} {teacher.reviews === 1 ? 'review' : 'reviews'}
+                          </span>
+                        </Link>
+                      ) : (
+                        <span className="rating-text">No reviews yet</span>
+                      )}
                     </div>
                   </div>
                   

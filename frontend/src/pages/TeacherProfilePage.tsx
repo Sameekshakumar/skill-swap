@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from '../utils/axios';
+import { useAuth } from '../contexts/AuthContext';
+import { useFeedback } from '../contexts/FeedbackContext';
+import RequestSessionModal from '../components/bookings/RequestSessionModal';
 import { getInitials, handleApiError } from '../utils/helpers';
 import ReviewsList from '../components/reviews/ReviewsList';
 import './TeacherProfilePage.css';
@@ -27,9 +30,38 @@ interface TeacherProfile {
 
 export default function TeacherProfilePage() {
   const { id } = useParams<{ id: string }>();
+  const { user, refreshUser } = useAuth();
+  const { notify } = useFeedback();
   const [profile, setProfile] = useState<TeacherProfile | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedSkill, setSelectedSkill] = useState<TeacherSkill | null>(null);
+  const [isRequesting, setIsRequesting] = useState(false);
+
+  // You cannot book yourself, so your own profile shows no request buttons.
+  const isOwnProfile = Boolean(user && profile && user.id === profile.id);
+
+  const handleRequestSession = async (requestData: {
+    teacherId: string;
+    skillId: string;
+    skill: string;
+    dateTime: string;
+    duration: number;
+    notes: string;
+    creditsPerHour: number;
+  }) => {
+    setIsRequesting(true);
+    try {
+      await axios.post('/bookings', requestData);
+      await refreshUser();
+      setSelectedSkill(null);
+      notify('Session request sent.');
+    } catch (err) {
+      notify(handleApiError(err), 'error');
+    } finally {
+      setIsRequesting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -106,6 +138,17 @@ export default function TeacherProfilePage() {
                     <span className="skill-tag credits">{skill.creditsPerHour} credits/hr</span>
                   </div>
                   <p className="teacher-skill-description">{skill.description}</p>
+
+                  {!isOwnProfile && (
+                    <button
+                      type="button"
+                      className="teacher-skill-btn"
+                      onClick={() => setSelectedSkill(skill)}
+                      disabled={isRequesting}
+                    >
+                      Request session
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -114,6 +157,27 @@ export default function TeacherProfilePage() {
 
         <ReviewsList userId={profile.id} userName={profile.name} />
       </div>
+
+      {selectedSkill && (
+        <RequestSessionModal
+          teacher={{
+            id: profile.id,
+            skillId: selectedSkill.id,
+            name: profile.name,
+            university: profile.college || 'Unknown',
+            year: profile.yearOfStudy || '',
+            skill: selectedSkill.skillName,
+            proficiency: selectedSkill.level,
+            creditRate: selectedSkill.creditsPerHour,
+            rating: profile.rating,
+            reviews: profile.reviewCount,
+            bio: selectedSkill.description,
+            imageUrl: profile.avatarUrl || ''
+          }}
+          onClose={() => setSelectedSkill(null)}
+          onSubmit={handleRequestSession}
+        />
+      )}
     </div>
   );
 }

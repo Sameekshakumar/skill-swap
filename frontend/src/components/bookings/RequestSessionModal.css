@@ -94,7 +94,7 @@
    --primary-text / --secondary-text are left untouched app-wide; these
    selectors only apply inside .request-session-modal. */
 :root[data-theme='dark'] .request-session-modal .form-label {
-  color: #f1f5f9;
+  color: var(--primary-text);
 }
 
 :root[data-theme='dark'] .request-session-modal .modal-input,
@@ -102,21 +102,21 @@
 :root[data-theme='dark'] .request-session-modal .modal-textarea {
   background-color: rgba(15, 23, 42, 0.55);
   border-color: rgba(255, 255, 255, 0.18);
-  color: #f1f5f9;
+  color: var(--primary-text);
 }
 
 :root[data-theme='dark'] .request-session-modal .modal-textarea::placeholder {
-  color: #94a3b8;
+  color: var(--secondary-text);
 }
 
 .modal-input:disabled {
-  background-color: #dbeafe;
-  color: #031926;
+  background-color: color-mix(in srgb, var(--ss-accent) 22%, transparent);
+  color: var(--primary-text);
 }
 
 :root[data-theme='dark'] .request-session-modal .modal-input:disabled {
   background-color: rgba(26, 86, 219, 0.35);
-  color: #f1f5f9;
+  color: var(--primary-text);
 }
 
 .modal-select {
@@ -151,12 +151,12 @@
 }
 
 .modal-btn-cancel {
-  background-color: #f3f4f6;
-  color: #031926;
+  background-color: color-mix(in srgb, var(--ss-text) 8%, transparent);
+  color: var(--primary-text);
 }
 
 .modal-btn-submit {
-  background-color: #031926;
+  background-color: var(--ss-accent);
   color: #FFFFFF;
 }
 
@@ -165,10 +165,11 @@
 }
 
 .credit-summary {
-  background-color: #F0F5F4;
+  background-color: color-mix(in srgb, var(--ss-text) 6%, transparent);
   border-radius: 8px;
   padding: 1rem;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border-color);
+  color: var(--primary-text);
 }
 
 .credit-summary-row {
@@ -180,7 +181,7 @@
 }
 
 .credit-summary-row.total {
-  border-top: 2px solid #E5E7EB;
+  border-top: 2px solid var(--border-color);
   padding-top: 0.75rem;
   margin-top: 0.5rem;
   font-weight: 600;
@@ -188,7 +189,7 @@
 }
 
 .request-session-modal .credit-amount {
-  color: #022f49;
+  color: var(--accent-text);
   font-weight: 600;
 }
 
