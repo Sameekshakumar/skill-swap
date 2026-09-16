@@ -85,7 +85,34 @@
   margin-bottom: 0.7rem;
 }
 
+.teacher-skill-btn {
+  margin-top: 1.1rem;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  background-color: var(--ss-accent);
+  color: #ffffff;
+  font-size: 0.925rem;
+  font-weight: 600;
+  transition: background-color 0.18s ease;
+}
+
+.teacher-skill-btn:hover:not(:disabled) {
+  background-color: var(--ss-accent-hover);
+}
+
+.teacher-skill-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.teacher-skill {
+  display: flex;
+  flex-direction: column;
+}
+
 .teacher-skill-description {
+  flex: 1;
   margin: 0;
   color: var(--secondary-text);
   font-size: 0.925rem;

@@ -1,6 +1,8 @@
+/* Colour comes from the theme tokens. Everything here used to be hardcoded
+   for light mode, which left the whole panel white in dark mode. */
 .reviews-container {
   padding: 1.5rem 2.5rem;
-  background: white;
+  background: var(--card-bg-color);
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
   margin-bottom: 2rem;
@@ -10,7 +12,7 @@
 
 .reviews-header {
   margin-bottom: 0.75rem;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.75rem;
 }
 
@@ -22,7 +24,7 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: #022f49;
+  color: var(--primary-text);
 }
 
 .rating-badge {
@@ -34,7 +36,7 @@
 .rating-number {
   font-size: 1.2rem;
   font-weight: bold;
-  color: #022f49;
+  color: var(--primary-text);
 }
 
 .rating-badge .star-display {
@@ -47,7 +49,7 @@
 
 .rating-meta {
   font-size: 0.7rem;
-  color: #6b7280;
+  color: var(--secondary-text);
 }
 
 .rating-summary {
@@ -65,12 +67,12 @@
 .rating-value {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #022f49;
+  color: var(--primary-text);
 }
 
 .rating-max {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--secondary-text);
 }
 
 .star-display {
@@ -93,7 +95,7 @@
 
 .review-count {
   margin: 0;
-  color: #6b7280;
+  color: var(--secondary-text);
   font-size: 0.8rem;
 }
 
@@ -107,15 +109,15 @@
 
 .review-card {
   padding: 0.75rem;
-  background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  background: color-mix(in srgb, var(--ss-text) 4%, transparent);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   transition: all 0.2s;
 }
 
 .review-card:hover {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-  border-color: #D1D5DB;
+  border-color: var(--secondary-text);
 }
 
 .review-header {
@@ -133,14 +135,14 @@
 .reviewer-name {
   margin: 0;
   font-size: 0.85rem;
-  color: #022f49;
+  color: var(--primary-text);
   font-weight: 600;
 }
 
 .review-skill {
   display: inline-block;
-  background-color: #E0F2FE;
-  color: #0369a1;
+  background-color: color-mix(in srgb, var(--ss-accent) 14%, transparent);
+  color: var(--accent-text);
   padding: 0.15rem 0.5rem;
   border-radius: 9999px;
   font-size: 0.65rem;
@@ -155,14 +157,14 @@
 
 .review-comment {
   margin: 0.4rem 0;
-  color: #374151;
+  color: var(--primary-text);
   line-height: 1.4;
   font-size: 0.8rem;
 }
 
 .review-date {
   margin: 0;
-  color: #9ca3af;
+  color: var(--secondary-text);
   font-size: 0.65rem;
 }
 
@@ -170,8 +172,8 @@
 .reviews-empty {
   padding: 1.5rem;
   text-align: center;
-  color: #6b7280;
-  background: #f9fafb;
+  color: var(--secondary-text);
+  background: color-mix(in srgb, var(--ss-text) 4%, transparent);
   border-radius: 8px;
   font-size: 0.9rem;
 }

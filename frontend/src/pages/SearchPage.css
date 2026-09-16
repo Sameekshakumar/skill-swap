@@ -159,24 +159,12 @@
   margin: 0;
 }
 
-.availability-tag {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  background-color: var(--green-light);
-  color: var(--green-accent);
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
 /* --- Skill Tag --- */
 .skill-tag {
   display: inline-block;
   padding: 0.4rem 0.8rem;
-  background-color: var(--purple-accent);
-  color: var(--button-text);
+  background-color: color-mix(in srgb, var(--ss-accent) 14%, transparent);
+  color: var(--accent-text);
   border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 500;
@@ -202,8 +190,8 @@
 
 .proficiency-tag {
   padding: 0.25rem 0.6rem;
-  background-color: var(--purple-light);
-  color: var(--purple-accent);
+  background-color: color-mix(in srgb, var(--ss-accent) 12%, transparent);
+  color: var(--accent-text);
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 500;
@@ -230,11 +218,13 @@
 }
 
 /* --- Request Session Button --- */
+/* Always the solid brand blue with white on it. --accent-color flips to a pale
+   blue in dark mode, which left white text on a near-white button. */
 .request-session-btn {
   width: 100%;
   padding: 0.8rem 1rem;
-  background-color: var(--accent-color);
-  color: var(--button-text);
+  background-color: var(--ss-accent);
+  color: #ffffff;
   border: none;
   border-radius: 8px;
   font-size: 1rem;
@@ -244,7 +234,7 @@
 }
 
 .request-session-btn:hover {
-  background-color: #034a6d;
+  background-color: var(--ss-accent-hover);
   transform: translateY(-1px);
 }
 
@@ -294,4 +284,25 @@
 .load-more-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* The rating doubles as the way in to somebody's reviews. */
+.rating-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--accent-text);
+  font-size: 0.85rem;
+  font-weight: 550;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease;
+}
+
+.rating-link:hover {
+  border-bottom-color: currentColor;
+}
+
+.rating-link .rating-count {
+  color: var(--secondary-text);
+  font-weight: 400;
 }
