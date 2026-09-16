@@ -159,18 +159,6 @@
   margin: 0;
 }
 
-.availability-tag {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  background-color: var(--green-light);
-  color: var(--green-accent);
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
 /* --- Skill Tag --- */
 .skill-tag {
   display: inline-block;
