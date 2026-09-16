@@ -183,23 +183,23 @@
 }
 
 .booking-status.requested {
-  background-color: #FEF3C7;
-  color: #92400E;
+  background-color: var(--status-pending-bg);
+  color: var(--status-pending-fg);
 }
 
 .booking-status.confirmed {
-  background-color: #D1FAE5;
-  color: #065F46;
+  background-color: var(--status-confirmed-bg);
+  color: var(--status-confirmed-fg);
 }
 
 .booking-status.completed {
-  background-color: #DBEAFE;
-  color: #1E40AF;
+  background-color: var(--status-complete-bg);
+  color: var(--status-complete-fg);
 }
 
 .booking-status.cancelled {
-  background-color: #FEE2E2;
-  color: #991B1B;
+  background-color: var(--status-cancelled-bg);
+  color: var(--status-cancelled-fg);
 }
 
 .booking-details {
@@ -252,30 +252,30 @@
 }
 
 .accept-btn {
-  background-color: #10B981;
+  background-color: var(--action-accept);
   color: var(--button-text);
 }
 
 .accept-btn:hover:not(:disabled) {
-  background-color: #059669;
+  background-color: var(--action-accept-hover);
 }
 
 .reject-btn {
-  background-color: #EF4444;
+  background-color: var(--action-reject);
   color: var(--button-text);
 }
 
 .reject-btn:hover:not(:disabled) {
-  background-color: #DC2626;
+  background-color: var(--action-reject-hover);
 }
 
 .cancel-btn {
-  background-color: #F3F4F6;
+  background-color: var(--action-neutral);
   color: var(--primary-text);
 }
 
 .cancel-btn:hover:not(:disabled) {
-  background-color: #E5E7EB;
+  background-color: var(--action-neutral-hover);
 }
 
 .complete-btn {
@@ -334,28 +334,6 @@
   }
 }
 
-/* --- Dark mode --- */
-/* The status colours above are light pastels. Each keeps its meaning here but
-   moves to a dark surface with a legible foreground. */
-:root[data-theme='dark'] :root[data-theme='dark'] :root[data-theme='dark'] :root[data-theme='dark'] :root[data-theme='dark'] .booking-status.requested {
-  background-color: #3A2F12;
-  color: #FBBF24;
-}
-
-:root[data-theme='dark'] .booking-status.confirmed {
-  background-color: #12351F;
-  color: #5FD9A0;
-}
-
-:root[data-theme='dark'] .booking-status.completed {
-  background-color: #16293F;
-  color: #7FB3F5;
-}
-
-:root[data-theme='dark'] .booking-status.cancelled {
-  background-color: #3A1D1D;
-  color: #F09393;
-}
 
 /* --- Empty states ---------------------------------------------------------
    One recipe for all four tabs: a quiet glass panel with a dashed accent edge. */

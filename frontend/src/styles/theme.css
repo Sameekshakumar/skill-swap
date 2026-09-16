@@ -31,6 +31,25 @@
   --glass-shadow: 0 10px 15px -3px var(--ss-glass-shadow);
   --brand-ink: #1e3a8a;
   --nav-text: var(--brand-ink);
+
+  /* Semantic status colours. Distinct hues on purpose — they carry meaning
+     rather than brand — but themed so both modes stay legible. */
+  --status-pending-bg: #fef3c7;
+  --status-pending-fg: #92400e;
+  --status-confirmed-bg: #d1fae5;
+  --status-confirmed-fg: #065f46;
+  --status-complete-bg: #dbeafe;
+  --status-complete-fg: #1e40af;
+  --status-cancelled-bg: #fee2e2;
+  --status-cancelled-fg: #991b1b;
+
+  --action-accept: #0f766e;
+  --action-accept-hover: #115e59;
+  --action-reject: #b91c1c;
+  --action-reject-hover: #991b1b;
+  --action-neutral: #f3f4f6;
+  --action-neutral-hover: #e5e7eb;
+  --toast-error-bg: #9b2c2c;
 }
 
 :root[data-theme='dark'] {
@@ -44,6 +63,23 @@
   --amber-light: rgba(251, 191, 36, 0.12);
   --input-bg: rgba(15, 23, 42, 0.55);
   --glass-bg-hover: rgba(30, 41, 59, 0.8);
+
+  --status-pending-bg: #3a2f12;
+  --status-pending-fg: #fbbf24;
+  --status-confirmed-bg: #12351f;
+  --status-confirmed-fg: #5fd9a0;
+  --status-complete-bg: #16293f;
+  --status-complete-fg: #7fb3f5;
+  --status-cancelled-bg: #3a1d1d;
+  --status-cancelled-fg: #f09393;
+
+  --action-accept: #2f9e8f;
+  --action-accept-hover: #268576;
+  --action-reject: #e06060;
+  --action-reject-hover: #c94f4f;
+  --toast-error-bg: #7f1d1d;
+  --action-neutral: rgba(255, 255, 255, 0.1);
+  --action-neutral-hover: rgba(255, 255, 255, 0.16);
 }
 
 html {

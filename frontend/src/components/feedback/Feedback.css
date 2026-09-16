@@ -27,7 +27,7 @@
 }
 
 .toast-error {
-  background-color: #9B2C2C;
+  background-color: var(--toast-error-bg);
   color: #FFFFFF;
 }
 
@@ -81,7 +81,7 @@
 }
 
 .confirm-accept {
-  background-color: #9B2C2C;
+  background-color: var(--toast-error-bg);
   color: #FFFFFF;
 }
 

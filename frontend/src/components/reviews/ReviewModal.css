@@ -139,7 +139,7 @@ textarea {
   font-size: 1rem;
   resize: none;
   font-size: 0.875rem;
-  background-color: #ffffff;
+  background-color: var(--input-bg);
   color: var(--primary-text);
   box-sizing: border-box;
 }
