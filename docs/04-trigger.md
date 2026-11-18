@@ -34,13 +34,13 @@ Run these in order. Replace the email if you are using a different account.
 
 ```sql
 SELECT name, rating, "reviewCount"
-FROM "User" WHERE email = 'demo-alice@example.com';
+FROM "User" WHERE email = 'crud-alice@example.com';
 ```
 
 ```
     name     | rating | reviewCount
 -------------+--------+-------------
- Demo Alice  |      0 |           0
+ CRUD Alice  |      0 |           0
 ```
 
 ### Step 2 — insert a review, touching only the Review table
@@ -49,7 +49,7 @@ FROM "User" WHERE email = 'demo-alice@example.com';
 INSERT INTO "Review" (id, "reviewerId", "revieweeId", "bookingId", rating, comment, skill, "updatedAt")
 SELECT gen_random_uuid(), b."learnerId", b."teacherId", b.id, 5,
        'Very clear explanations', b.skill, NOW()
-FROM "Booking" b WHERE b.skill = 'Demo Calculus';
+FROM "Booking" b WHERE b.skill = 'CRUD Calculus';
 ```
 
 Note that the statement never mentions `"User"`.
@@ -58,13 +58,13 @@ Note that the statement never mentions `"User"`.
 
 ```sql
 SELECT name, rating, "reviewCount"
-FROM "User" WHERE email = 'demo-alice@example.com';
+FROM "User" WHERE email = 'crud-alice@example.com';
 ```
 
 ```
     name     | rating | reviewCount
 -------------+--------+-------------
- Demo Alice  |      5 |           1
+ CRUD Alice  |      5 |           1
 ```
 
 The rating changed without anyone updating `"User"`. The trigger did it.
@@ -73,7 +73,7 @@ The rating changed without anyone updating `"User"`. The trigger did it.
 
 ```sql
 -- a 3-star review from a different booking
-SELECT name, rating, "reviewCount" FROM "User" WHERE email = 'demo-alice@example.com';
+SELECT name, rating, "reviewCount" FROM "User" WHERE email = 'crud-alice@example.com';
 -- rating becomes 4.0, reviewCount becomes 2
 ```
 
@@ -82,7 +82,7 @@ SELECT name, rating, "reviewCount" FROM "User" WHERE email = 'demo-alice@example
 ```sql
 DELETE FROM "Review" WHERE comment = 'Very clear explanations';
 
-SELECT name, rating, "reviewCount" FROM "User" WHERE email = 'demo-alice@example.com';
+SELECT name, rating, "reviewCount" FROM "User" WHERE email = 'crud-alice@example.com';
 ```
 
 Count drops and the average is recomputed from what remains. Delete every review
