@@ -54,9 +54,7 @@
   box-sizing: border-box;
 }
 
-/* Google renders its own fixed-width button, so the controls below it are
-   held to the same width to keep their edges aligned. */
-.login-controls {
+.login-form {
   width: 320px;
   max-width: 100%;
   display: flex;
@@ -66,10 +64,123 @@
   margin: 1.75rem 0 1.5rem;
 }
 
-.google-signin-row {
+.login-field {
   display: flex;
-  justify-content: center;
-  min-height: 44px;
+  flex-direction: column;
+  gap: 0.35rem;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--secondary-text);
+}
+
+/* The border is drawn, not transparent: in dark mode --input-bg sits almost
+   on top of the panel colour, so an edgeless box is invisible. */
+.login-field input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--primary-text);
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.login-field input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+/* Holds the reveal button against the right edge of the password input. */
+.login-password-wrap {
+  position: relative;
+  display: block;
+}
+
+/* Room for the button, so a long password does not run underneath it. */
+.login-password-wrap input {
+  padding-right: 4rem;
+}
+
+.login-reveal {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  padding: 0.25rem 0.5rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--accent-color);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.login-reveal:hover {
+  background-color: var(--accent-light);
+}
+
+/* While the confirmation disagrees with the password. --action-reject is the
+   themed reject colour, so this stays legible in both themes. */
+.login-field input.is-invalid,
+.login-field input.is-invalid:focus {
+  border-color: var(--action-reject);
+}
+
+.login-mismatch {
+  margin: -0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--action-reject);
+  text-align: left;
+}
+
+.login-back {
+  display: inline-block;
+  margin-top: 1.25rem;
+  font-size: 0.825rem;
+  color: var(--secondary-text);
+  text-decoration: none;
+}
+
+.login-back:hover {
+  color: var(--primary-text);
+  text-decoration: underline;
+}
+
+.login-submit {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--button-text);
+  background-color: var(--button-bg);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: opacity 150ms ease;
+}
+
+.login-submit:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.login-submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* A link in everything but markup: it toggles state, so it stays a button. */
+.login-switch {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent-color);
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 .remember-row {

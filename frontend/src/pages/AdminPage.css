@@ -1,0 +1,241 @@
+/* Colour here is all tokens — a raw value in a page stylesheet beats the
+   theme, because page styles are imported after it. */
+
+.admin-page {
+  padding-top: 2rem;
+  padding-bottom: 4rem;
+}
+
+.admin-title {
+  font-family: var(--ss-font-display);
+  font-size: 2.5rem;
+  color: var(--primary-text);
+  margin: 0;
+}
+
+.admin-subtitle {
+  color: var(--secondary-text);
+  margin: 0.25rem 0 1.5rem;
+}
+
+/* The one glass recipe, same as every other panel. */
+.admin-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(12px);
+  padding: 1.5rem;
+}
+
+.admin-search {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--primary-text);
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.admin-search:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.admin-empty {
+  color: var(--secondary-text);
+  text-align: center;
+  padding: 2rem 0;
+  margin: 0;
+}
+
+/* The table scrolls inside its own box rather than widening the page. */
+.admin-table-scroll {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  color: var(--primary-text);
+}
+
+.admin-table th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--secondary-text);
+  padding: 0 0.75rem 0.6rem;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.admin-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* A suspended account is dimmed, not hidden — you still need to find it to
+   put it back. */
+.admin-table tr.is-suspended td {
+  opacity: 0.55;
+}
+
+.admin-numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-email {
+  color: var(--secondary-text);
+  word-break: break-all;
+}
+
+.admin-sub {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--secondary-text);
+}
+
+.admin-you {
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.7rem;
+  border-radius: 999px;
+  color: var(--accent-color);
+  background-color: var(--accent-light);
+}
+
+.admin-tag {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.admin-tag-admin {
+  color: var(--status-complete-fg);
+  background-color: var(--status-complete-bg);
+}
+
+.admin-tag-user {
+  color: var(--secondary-text);
+  background-color: var(--action-neutral);
+}
+
+.admin-tag-active {
+  color: var(--status-confirmed-fg);
+  background-color: var(--status-confirmed-bg);
+}
+
+.admin-tag-suspended {
+  color: var(--status-cancelled-fg);
+  background-color: var(--status-cancelled-bg);
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.admin-actions button,
+.admin-pager button,
+.admin-credit-form button {
+  padding: 0.35rem 0.7rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--primary-text);
+  background-color: var(--action-neutral);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-actions button:hover:not(:disabled),
+.admin-pager button:hover:not(:disabled),
+.admin-credit-form button:hover:not(:disabled) {
+  background-color: var(--action-neutral-hover);
+}
+
+.admin-actions button:disabled,
+.admin-pager button:disabled,
+.admin-credit-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-danger {
+  color: var(--action-reject);
+}
+
+.admin-danger:hover:not(:disabled) {
+  border-color: var(--action-reject);
+}
+
+.admin-credit-row td {
+  background-color: var(--accent-light);
+}
+
+.admin-credit-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.admin-credit-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--secondary-text);
+}
+
+.admin-credit-form input {
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--primary-text);
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.admin-credit-form input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.admin-credit-reason {
+  flex: 1 1 16rem;
+}
+
+.admin-credit-reason input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--secondary-text);
+}

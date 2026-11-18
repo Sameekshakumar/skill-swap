@@ -10,6 +10,8 @@ import SearchPage from './pages/SearchPage';
 import ProfilePage from './pages/ProfilePage';
 import TeacherProfilePage from './pages/TeacherProfilePage';
 import DashboardPage from './pages/DashboardPage';
+import AdminPage from './pages/AdminPage';
+import AdminRoute from './components/AdminRoute';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -32,6 +34,7 @@ function App() {
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/teachers/:id" element={<TeacherProfilePage />} />
+                <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
               </Route>
 
               {/* Catch all route */}

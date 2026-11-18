@@ -8,8 +8,8 @@ import './WelcomePage.css'
 
 const YEARS = ['1st Year', '2nd Year', '3rd Year', '4th Year', 'Postgraduate']
 
-// Google gives us a name, an email and a photo — not a college or a year.
-// New accounts land here once to fill in the rest.
+// Registration collects a name, an email and a password — not a college or a
+// year. New accounts land here once to fill in the rest.
 export default function WelcomePage() {
   const { user, refreshUser } = useAuth()
   const navigate = useNavigate()
