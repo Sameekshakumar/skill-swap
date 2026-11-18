@@ -42,10 +42,6 @@ router.post('/', auth, async (req, res) => {
       // Determine who is being reviewed
       const revieweeId = booking.teacherId === req.user.id ? booking.learnerId : booking.teacherId;
 
-      // Lock the reviewee so two reviews landing at once cannot both compute
-      // the average from a stale set of rows.
-      await tx.$executeRaw`SELECT id FROM "User" WHERE id = ${revieweeId} FOR UPDATE`;
-
       const created = await tx.review.create({
         data: {
           reviewerId: req.user.id,
@@ -57,21 +53,9 @@ router.post('/', auth, async (req, res) => {
         }
       });
 
-      // Recompute the reviewee's aggregate from the table rather than nudging it.
-      const stats = await tx.review.aggregate({
-        where: { revieweeId },
-        _avg: { rating: true },
-        _count: true
-      });
-
-      await tx.user.update({
-        where: { id: revieweeId },
-        data: {
-          rating: Math.round(stats._avg.rating * 10) / 10, // Round to 1 decimal
-          reviewCount: stats._count
-        }
-      });
-
+      // rating and reviewCount are not touched here. The review_rating_sync
+      // trigger on Review recomputes them in the same transaction, so they
+      // stay correct even for rows inserted straight through psql.
       return created;
     });
 

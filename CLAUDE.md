@@ -22,23 +22,31 @@ Frontend calls relative `/api`; Vite proxies to `localhost:5001` (`frontend/vite
 
 ## Backend
 
-- Auth: **Google sign-in only — the app stores no passwords.** The browser gets an ID token
-  from Google and posts it to `POST /api/auth/google`, which verifies it with
-  `google-auth-library` and issues our own JWT (24h). `middleware/auth.js` verifies that JWT
-  and puts `{ id, email, name, creditBalance }` on `req.user`.
-- A Google account is matched by `googleId`, falling back to `email` so an account created
-  before Google sign-in is adopted rather than duplicated.
-- `GOOGLE_CLIENT_ID` (backend) and `VITE_GOOGLE_CLIENT_ID` (frontend) must match. Both are
-  public identifiers, not secrets.
+- Auth: **email and password, hashed with bcrypt and stored in `User.passwordHash`.**
+  `POST /api/auth/register` and `POST /api/auth/login` both return `{ token, user }`; the
+  token is our own JWT (30d). `middleware/auth.js` verifies it and puts
+  `{ id, email, name, role, creditBalance }` on `req.user`. Google sign-in was removed —
+  there is no `googleId`, no `google-auth-library`, and no client id in either `.env`.
+- **Login replies identically for a wrong password and an unknown email** (`401 Invalid email
+  or password`), and compares against a dummy hash when no user is found. Telling the two
+  apart lets anyone test which addresses have accounts.
+- **`/auth/register` never reads `role` from the body.** Everyone registers as `user`. The
+  first admin is made with `node make-admin.js <email>`; after that an admin can promote
+  others through `PATCH /api/admin/users/:id/role`.
 - Validation: `express-validator` `check()` arrays inline in route definitions.
-- Routes mounted in `server.js`: `/api/auth`, `/api/bookings`, `/api/users`, `/api/profile`, `/api/reviews`.
+- Routes mounted in `server.js`: `/api/auth`, `/api/bookings`, `/api/users`, `/api/profile`,
+  `/api/reviews`, `/api/admin`.
   `/api/users` now has exactly one endpoint, `GET /teachers/search` — the CRUD endpoints under it
   were unused and were removed.
 - Models live in `prisma/schema.prisma`: `User`, `Skill`, `SkillToLearn`, `Booking`,
   `Transaction`, `Review`. `creditBalance` defaults to 10.
 - `lib/httpError.js` — throw `HttpError(status, message)` inside a `$transaction` to roll it
   back with a real status code; `sendError(res, err, fallback)` in the catch.
-- `lib/profile.js` — the shared "user minus password, with both skill lists" shape.
+- `lib/profile.js` — the shared "user minus password, with both skill lists" shape. It
+  spreads the whole user row, so **anything secret added to `User` must be stripped here** —
+  this one function is what `/auth/me` and `GET /profile` both return.
+- `lib/bookingCancel.js` — `cancelWithRefund`, shared by the learner's cancel, the teacher's
+  reject and the admin cancel so all three move credits identically.
 
 ## Frontend
 
@@ -204,42 +212,120 @@ vector search will replace.
 
 Your own listings are excluded server side — you cannot book yourself.
 
+### Roles and the admin routes
+
+Two roles, `user` and `admin`, on `User.role`. `User.status` is `active` or `suspended`.
+
+- **The role is read from the database on every request, never carried in the JWT.** That is
+  what makes demotion and suspension take effect at once instead of when a 30-day token
+  expires. Do not "optimise" it into the token.
+- `middleware/auth.js` exports `requireAdmin`; mount it *after* `auth`, which is what puts the
+  role on the request: `router.use(auth, requireAdmin)`.
+- `routes/admin.js` (`/api/admin`) — list/search users, suspend and reinstate, promote and
+  demote, delete, adjust credits, delete a review, remove a skill listing, cancel a booking.
+- **An admin cannot suspend, demote or delete their own account.** Without those guards the
+  last admin can lock everyone out of the panel.
+- **Credit adjustments go through the same conditional `updateMany` the booking debit uses**,
+  so a deduction cannot push a balance negative, and each one writes an `Adjustment`
+  Transaction row so the ledger still explains the balance.
+- **Deleting a user with bookings is refused (409), not cascaded.** `Booking` restricts the
+  foreign key on purpose: removing one party would strand the other's history and credits.
+  Suspend instead.
+
+### Redis
+
+A second datastore, `lib/redis.js`, doing two jobs Postgres is a poor fit for:
+rate-limiting `/auth/login` (10 attempts per IP+email per 15 minutes, cleared on
+success) and caching `/users/teachers/search` for 60 seconds.
+
+- **It fails open on purpose.** No Redis means rate limiting allows everything
+  and the cache always misses; the app still works. Never make a request depend
+  on Redis being up.
+- Keys are prefixed `ratelimit:login:` and `cache:search:`. **Never `FLUSHDB` on
+  the dev machine** — the local Redis also holds unrelated keys from another
+  exercise.
+- The cache is dropped by prefix whenever a teaching skill is added or removed,
+  so a new listing shows up immediately instead of after the TTL.
+- `scanIterator` in node-redis v5+ yields a *batch* of keys per iteration, not
+  one key. `dropPrefix` handles that; copy it rather than rewriting it.
+- **Requiring `lib/redis.js` keeps the Node event loop alive**, so a CLI script
+  that imports it never exits on its own. Call `client.quit()` at the end.
+
+### Triggers
+
+`review_rating_sync_trigger` on `Review` (AFTER INSERT/UPDATE/DELETE) keeps
+`User.rating` and `User.reviewCount` correct via `refresh_user_rating()`.
+
+This used to be JavaScript in both `routes/reviews.js` and `routes/admin.js`.
+Both copies are gone — **do not reintroduce rating arithmetic in application
+code.** The trigger recomputes with `AVG` rather than adjusting a running total,
+so it is self-correcting, and it fires for raw SQL too.
+
+### Demo documentation
+
+`docs/` holds the material for the course evaluation: ER diagram, the
+Mongo → relational writeup, the table-to-UI mapping, `crud-operations.sql`
+(CRUD on all six tables), `demo-queries.sql`, the trigger walkthrough, the Redis
+guide, and `00-demo-runbook.md` tying them together. Both `.sql` files run clean
+end to end against the live database; re-run them after a schema change.
+
+`"updatedAt"` must be supplied by hand in raw SQL inserts — Prisma's `@updatedAt`
+is applied client-side, not as a database default.
+
 ### Checks
 
 `backend/smoke-*.js` — run against a live server. `npm run dev`, then
 `cd backend && for f in smoke-*.js; do node $f || break; done`.
 
-`smoke-helpers.js` holds the shared `call`/`newUser`/`cleanup`. Tests cannot sign in through
-Google, so `newUser` inserts a user directly and mints the same JWT the server would issue.
-Each suite deletes its own `smoke-*@example.com` rows on the way out, pass or fail.
+`smoke-helpers.js` holds the shared `call`/`newUser`/`cleanup`. `newUser` inserts a user
+directly and mints the same JWT the server would issue, rather than registering each fixture
+through the API; pass `{ role: 'admin' }` as `extra` for an admin. Each suite deletes its own
+`smoke-*@example.com` rows on the way out, pass or fail.
+
+`smoke-admin.js` covers RBAC: every admin route is checked for 401 without a token and 403
+with a plain user's token, plus promotion, demotion, suspension taking effect on an existing
+token, the self-lockout guards, and that an admin cancel refunds exactly once.
+
+`smoke-redis.js` is the odd one out — it needs neither the server nor Postgres, only a
+running `redis-server`. It covers cache read/write/overwrite/TTL, prefix invalidation, and
+the rate-limit counter.
 
 ## Where things stand
 
-Last worked on: 16 September 2026. Everything described above is merged to `main` except the
-`cleanup-sweep` branch, which is pushed and awaiting a PR.
+Last worked on: 9 November 2026. The `cleanup-sweep` branch is still unmerged, and the
+password-auth/RBAC work described above sits on top of it, uncommitted.
 
-**Done and verified end to end:** the Mongo → Prisma/Postgres migration, Google-only sign-in,
-credit-safe bookings, reviews, semantic search, the public landing page, the design system
-rebrand, and booking from a teacher's profile. All six smoke suites pass against the live
-database.
+**Done and verified end to end:** the Mongo → Prisma/Postgres migration, email/password
+sign-in with bcrypt, two-role RBAC and the admin routes, credit-safe bookings, reviews,
+semantic search, the public landing page, the design system rebrand, and booking from a
+teacher's profile. All seven smoke suites pass against the live database, and register →
+welcome → discover → logout → login was walked through in the browser.
+
+**The database was wiped on 9 November 2026** when password auth replaced Google sign-in —
+the three existing accounts had no password and their bookings and reviews hung off them.
+A `pg_dump` was taken first. It lives only in that session's scratchpad, so treat the data as
+gone. Everything is empty: register a fresh account, then `node make-admin.js <email>`.
 
 ### Open, roughly in priority order
 
-1. **The Google app is still in Testing mode.** Only emails listed under Google Auth Platform →
-   Audience → Test users can sign in; anyone else gets "access blocked". Publishing needs a real
-   deployed URL for the Branding page, so this unblocks itself at deploy time. 100-user cap
-   until then, counted over the app's lifetime.
-2. **Nothing is deployed.** Localhost only. Deploying is what unlocks (1), and the frontend
-   proxies `/api` via the Vite dev server — that is a dev-only feature and needs replacing with
-   a real API base URL in production.
-3. **Redis was discussed and never justified.** Queries are indexed and fast, sessions are JWTs
-   with nothing to store. Don't add it without a concrete job; if it is needed for a writeup,
-   pick a real one (caching search results, rate-limiting bookings) rather than bolting it on.
-4. **The embedding model is small and it shows.** "something about maths" does not find
+1. **Admin content moderation has no UI.** The user panel at `/admin` is built, but
+   `DELETE /admin/reviews/:id`, `DELETE /admin/skills/:id` and
+   `POST /admin/bookings/:id/cancel` have no screen — they need listing endpoints that
+   do not exist yet.
+2. **`Transaction` has no read endpoint.** The ledger is written on every credit move and is
+   correct, but nothing displays it. Query it directly for now.
+3. **Next.js.** Raised as a possible course requirement, then dropped — the frontend is
+   still React + Vite. Revisit only if it is confirmed.
+4. **Nothing is deployed.** Localhost only, and the frontend proxies `/api` via the Vite dev
+   server — that is a dev-only feature and needs replacing with a real API base URL in
+   production. Redis would need a hosted instance too.
+5. **No password reset, and no email verification.** Anyone who forgets a password needs an
+   admin or a database edit. Both need an email sender, which is why they were left out.
+6. **The embedding model is small and it shows.** "something about maths" does not find
    Calculus. If misses like that pile up, swap `lib/embeddings.js` for a hosted embedding API —
    it is deliberately one file, and the relevance floor in `lib/skillSearch.js` must be
    re-measured afterwards.
-5. **Local branch `sams-branch`** holds one orphan commit ("Create README.md") that was never
+7. **Local branch `sams-branch`** holds one orphan commit ("Create README.md") that was never
    pushed. The README has been rewritten since, so it is almost certainly obsolete.
 
 ### Traps worth remembering
@@ -255,16 +341,16 @@ These each cost real time once, and none of them produce an error message.
   on the page. Use `clip`.
 - **Never `SELECT s.*` from `Skill` in a raw query.** The embedding column is a vector and
   Prisma cannot deserialise it.
-- **Google One Tap can silently sign the browser back in as the real user**, overriding a test
-  session injected into localStorage. Check which account you are actually looking at before
-  trusting what is on screen.
+- **`lib/profile.js` spreads the whole user row into the response.** Adding a secret column
+  to `User` leaks it through `/auth/me` and `GET /profile` with no error anywhere. It is
+  stripped there now; keep it that way.
 - **Test accounts are `smoke-*@example.com` and `uicheck-*@example.com`.** Clean them up —
   an interrupted run once left three fake teachers showing in Discover.
 
 ### Testing
 
-The smoke suites need a live server and hit the real database. They cannot sign in through
-Google, so `smoke-helpers.js` inserts a user directly and mints the same JWT the server would.
+The smoke suites need a live server and hit the real database. `smoke-helpers.js` inserts a
+user directly and mints the same JWT the server would.
 
 ```
 npm run dev
