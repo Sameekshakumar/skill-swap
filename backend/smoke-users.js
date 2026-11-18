@@ -82,7 +82,7 @@ const teach = (token, skillName, level, creditsPerHour, description) =>
   assert.strictEqual(profile.body.name, teacher.name);
   assert.strictEqual(profile.body.skillsToTeach.length, 1);
   assert.strictEqual(profile.body.email, undefined, 'the public profile is leaking an email address');
-  assert.strictEqual(profile.body.googleId, undefined, 'the public profile is leaking the Google id');
+  assert.strictEqual(profile.body.passwordHash, undefined, 'the public profile is leaking the password hash');
   assert.strictEqual(profile.body.creditBalance, undefined, 'the public profile is leaking a credit balance');
 
   assert.strictEqual((await call('GET', `/users/${teacher.id}`)).status, 401, 'public profile needs a token');

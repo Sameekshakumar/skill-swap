@@ -20,10 +20,14 @@ const profileFor = async (userId) => {
   });
   if (!user) return null;
 
+  // The whole user is spread into the response, so anything secret has to come
+  // off here — this shape is what both /auth/me and GET /profile return.
+  const { passwordHash, ...safe } = user;
+
   return {
-    ...user,
+    ...safe,
     skillsToLearn: await learnSkillsFor(userId),
-    // Drives the "finish setting up" step after a first Google sign-in.
+    // Drives the "finish setting up" step after registering.
     profileComplete: Boolean(user.college && user.yearOfStudy)
   };
 };
