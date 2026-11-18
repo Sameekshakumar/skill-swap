@@ -214,6 +214,81 @@ ORDER BY t.credits_earned DESC, u.name;
 
 
 -- ===========================================================================
+-- RECURSIVE QUERY — how knowledge spreads through the network
+-- ===========================================================================
+--
+-- Completed bookings form a graph: an edge from teacher to learner means
+-- knowledge moved along it. A recursive CTE walks that graph.
+--
+-- Question: starting from each teacher, who is reachable, and in how many
+-- hops? If Alice taught Bob and Bob taught Carol, then Carol is two hops from
+-- Alice even though they never met.
+--
+-- Two things make this safe rather than infinite:
+--   * the path array plus `<> ALL(path)` stops a cycle — A teaches B, B
+--     teaches A is perfectly legal in this app and would otherwise loop
+--     forever
+--   * the depth cap is a second belt-and-braces stop
+-- ===========================================================================
+
+WITH RECURSIVE teaching_chain AS (
+    -- Base case: everyone directly taught by someone
+    SELECT
+        b."teacherId"                            AS origin_id,
+        b."learnerId"                            AS reached_id,
+        1                                        AS hops,
+        ARRAY[b."teacherId", b."learnerId"]      AS path
+    FROM "Booking" b
+    WHERE b.status = 'Completed'
+
+    UNION ALL
+
+    -- Recursive case: follow the people they went on to teach
+    SELECT
+        tc.origin_id,
+        b."learnerId",
+        tc.hops + 1,
+        tc.path || b."learnerId"
+    FROM teaching_chain tc
+    JOIN "Booking" b
+      ON b."teacherId" = tc.reached_id
+     AND b.status = 'Completed'
+    WHERE b."learnerId" <> ALL(tc.path)   -- cycle guard
+      AND tc.hops < 5                     -- depth cap
+)
+SELECT
+    origin.name   AS knowledge_from,
+    reached.name  AS reached,
+    tc.hops,
+    -- The chain of names, readable
+    (SELECT string_agg(u.name, ' -> ' ORDER BY idx)
+     FROM unnest(tc.path) WITH ORDINALITY AS t(uid, idx)
+     JOIN "User" u ON u.id = t.uid)       AS chain
+FROM teaching_chain tc
+JOIN "User" origin  ON origin.id  = tc.origin_id
+JOIN "User" reached ON reached.id = tc.reached_id
+ORDER BY knowledge_from, tc.hops, reached;
+
+
+-- A smaller recursive example, if the graph one is more than is wanted:
+-- generate the next 7 days, then count sessions booked on each. A plain
+-- GROUP BY would omit days with no bookings; the generated series keeps them.
+WITH RECURSIVE next_week(day) AS (
+    SELECT CURRENT_DATE
+    UNION ALL
+    SELECT day + 1 FROM next_week WHERE day < CURRENT_DATE + 6
+)
+SELECT w.day,
+       COUNT(b.id) AS sessions
+FROM next_week w
+LEFT JOIN "Booking" b
+       ON b."dateTime"::date = w.day
+      AND b.status IN ('Requested', 'Confirmed')
+GROUP BY w.day
+ORDER BY w.day;
+
+
+-- ===========================================================================
 -- A simpler nested query, if the one above is more than is wanted
 -- ===========================================================================
 -- Teachers whose average rating beats the platform average rating.
