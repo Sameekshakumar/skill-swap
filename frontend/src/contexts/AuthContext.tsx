@@ -9,8 +9,8 @@ interface AuthContextType {
   // True until the saved token has been checked, so ProtectedRoute doesn't
   // redirect to /login before the session has had a chance to restore.
   loading: boolean;
-  // The browser obtains this credential from Google; the server verifies it.
-  loginWithGoogle: (credential: string, remember: boolean) => Promise<User>;
+  login: (email: string, password: string, remember: boolean) => Promise<User>;
+  register: (details: RegisterDetails, remember: boolean) => Promise<User>;
   logout: () => void;
   // Re-reads the profile so the navigation bar's credit count stays accurate
   // after a booking, cancellation or completion.
@@ -21,6 +21,7 @@ interface User {
   id: string;
   name: string;
   email: string;
+  role: 'user' | 'admin';
   creditBalance: number;
   college?: string;
   yearOfStudy?: string;
@@ -31,6 +32,12 @@ interface User {
 interface LoginResponse {
   token: string;
   user: User;
+}
+
+interface RegisterDetails {
+  name: string;
+  email: string;
+  password: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -67,14 +74,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
   }, []);
 
-  const loginWithGoogle = async (credential: string, remember: boolean) => {
-    const response = await axios.post('/auth/google', { credential });
-    const { user, token } = response?.data as LoginResponse;
+  // Both endpoints return the same { token, user } shape, so one helper
+  // finishes the job for either.
+  const startSession = (data: LoginResponse, remember: boolean) => {
+    setUser(data.user);
+    setToken(data.token);
+    storeToken(data.token, remember);
+    return data.user;
+  };
 
-    setUser(user);
-    setToken(token);
-    storeToken(token, remember);
-    return user;
+  const login = async (email: string, password: string, remember: boolean) => {
+    const response = await axios.post('/auth/login', { email, password });
+    return startSession(response.data as LoginResponse, remember);
+  };
+
+  const register = async (details: RegisterDetails, remember: boolean) => {
+    const response = await axios.post('/auth/register', details);
+    return startSession(response.data as LoginResponse, remember);
   };
 
   const refreshUser = async () => {
@@ -91,16 +107,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null);
     clearToken();
 
-    // Signing out has to stick. Without both of these, Google's automatic
-    // sign-in hands the account straight back and logging out does nothing.
+    // Signing out has to stick: clear the token from both stores and turn off
+    // "keep me signed in", so the next visit starts at the login form.
     forgetMe();
-    (window as any).google?.accounts?.id?.disableAutoSelect?.();
 
     window.location.href = '/login';
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated, loading, loginWithGoogle, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

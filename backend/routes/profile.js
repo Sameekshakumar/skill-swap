@@ -5,6 +5,10 @@ const auth = require('../middleware/auth');
 const prisma = require('../lib/prisma');
 
 const { teachSkillsFor, learnSkillsFor, profileFor } = require('../lib/profile');
+const redis = require('../lib/redis');
+// Every cached search page is invalidated when a listing changes; without this
+// a newly added skill stays invisible for up to the cache TTL.
+const SEARCH_CACHE_PREFIX = 'cache:search:';
 const { storeEmbeddingSafely } = require('../lib/skillSearch');
 
 const SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
@@ -72,6 +76,7 @@ router.post('/skills/teach', auth, [
     // Generated in the background: the skill is already saved, and search
     // still finds it by keyword until the embedding lands.
     storeEmbeddingSafely(created.id, created);
+    await redis.dropPrefix(SEARCH_CACHE_PREFIX);
 
     res.json(await teachSkillsFor(req.user.id));
   } catch (err) {
@@ -113,6 +118,7 @@ router.delete('/skills/teach/:skillId', auth, async (req, res) => {
     await prisma.skill.deleteMany({
       where: { id: req.params.skillId, userId: req.user.id }
     });
+    await redis.dropPrefix(SEARCH_CACHE_PREFIX);
 
     res.json(await teachSkillsFor(req.user.id));
   } catch (err) {

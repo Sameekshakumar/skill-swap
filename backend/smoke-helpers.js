@@ -1,8 +1,8 @@
 // Shared helpers for the smoke tests.
 //
-// Sign-in normally requires a Google-issued token, which a script cannot get.
 // Tests create users directly and mint the same JWT the server would issue, so
-// they exercise every route behind the token without faking Google itself.
+// they exercise every route behind the token without going through /auth/login
+// for each one. Pass `{ role: 'admin' }` as `extra` for an admin fixture.
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
@@ -36,7 +36,6 @@ const newUser = async (tag, extra = {}) => {
   const user = await prisma.user.create({
     data: {
       email,
-      googleId: `smoke-google-${Date.now()}-${counter}`,
       name: `Smoke ${tag}`,
       college: 'Smoke College',
       yearOfStudy: '3rd Year',
@@ -50,7 +49,7 @@ const newUser = async (tag, extra = {}) => {
     { expiresIn: '1h' }
   );
 
-  return { token, id: user.id, email, name: user.name };
+  return { token, id: user.id, email, name: user.name, role: user.role };
 };
 
 const cleanup = async () => {

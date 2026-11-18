@@ -7,6 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  user
+  admin
+}
+
+// A suspended account keeps its data but cannot authenticate. middleware/auth.js
+// re-reads the user on every request, so suspending takes effect immediately
+// rather than when the token expires.
+enum UserStatus {
+  active
+  suspended
+}
+
 enum SkillLevel {
   Beginner
   Intermediate
@@ -24,6 +37,7 @@ enum BookingStatus {
 enum BookingParty {
   learner
   teacher
+  admin
 }
 
 enum TransactionType {
@@ -31,15 +45,17 @@ enum TransactionType {
   Lock
   Transfer
   Refund
+  Adjustment
 }
 
 model User {
   id            String   @id @default(uuid())
   email         String   @unique
-  // Identity comes from Google; the app stores no passwords. Nullable so that
-  // accounts created before Google sign-in survive — the first Google login
-  // matches them by email and fills this in.
-  googleId      String?  @unique
+  // bcrypt hash. Never leaves the server: lib/profile.js strips it, because it
+  // spreads the whole user into the /auth/me and GET /profile responses.
+  passwordHash  String?
+  role          Role       @default(user)
+  status        UserStatus @default(active)
   avatarUrl     String?
   name          String
   college       String?

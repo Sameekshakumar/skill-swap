@@ -19,8 +19,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Google gives us a name and an email but not a college or year. Anyone
-  // missing those finishes setting up before reaching the rest of the app.
+  // Registration collects a name and an email but not a college or year.
+  // Anyone missing those finishes setting up before reaching the rest of the app.
   if (user && user.profileComplete === false && location.pathname !== '/welcome') {
     return <Navigate to="/welcome" replace />;
   }

@@ -13,10 +13,16 @@ const auth = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Find user
+    // Find user. Role and status are read here rather than carried in the
+    // token, so suspending or demoting someone takes effect on their next
+    // request instead of when their 30-day token runs out.
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
     if (!user) {
       throw new Error();
+    }
+
+    if (user.status === 'suspended') {
+      return res.status(403).json({ error: 'That account has been suspended' });
     }
 
     // Add user to request
@@ -24,6 +30,7 @@ const auth = async (req, res, next) => {
       id: user.id,
       email: user.email,
       name: user.name,
+      role: user.role,
       creditBalance: user.creditBalance
     };
     next();
@@ -32,5 +39,14 @@ const auth = async (req, res, next) => {
   }
 };
 
+// Always mount behind `auth`, which is what puts the role on the request.
+const requireAdmin = (req, res, next) => {
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ error: 'Administrator access required' });
+  }
+  next();
+};
+
 module.exports = auth;
 module.exports.authenticateToken = auth;
+module.exports.requireAdmin = requireAdmin;

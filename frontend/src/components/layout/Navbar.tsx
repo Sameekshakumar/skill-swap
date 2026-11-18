@@ -52,6 +52,17 @@ export default function Navbar() {
             </NavLink>
           ))}
 
+          {/* Only admins see it. AdminRoute is what actually enforces it —
+              hiding a link is presentation, not access control. */}
+          {user?.role === 'admin' && (
+            <NavLink
+              to="/admin"
+              className={({ isActive }) => `glass-pill nav-link${isActive ? ' active' : ''}`}
+            >
+              Admin
+            </NavLink>
+          )}
+
           <button type="button" onClick={logout} className="glass-pill">Logout</button>
         </div>
       </div>

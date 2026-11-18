@@ -86,7 +86,7 @@ export default function LandingPage() {
             </p>
             <div className="landing-actions">
               <Link to="/login" className="landing-cta landing-cta-solid">
-                Get started with Google
+                Create an account
               </Link>
               <a href="#how" className="landing-cta landing-cta-ghost">How it works</a>
             </div>
@@ -161,7 +161,7 @@ export default function LandingPage() {
               Everyone knows <em>something</em>
             </h2>
             <p className="landing-section-lede">
-              Sign in with your Google account, add one skill, and you are part of it.
+              Create an account, add one skill, and you are part of it.
             </p>
             <Link to="/login" className="landing-cta landing-cta-solid landing-cta-large">
               Get started
