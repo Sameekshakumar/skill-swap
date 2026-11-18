@@ -158,6 +158,10 @@ Two parts worth knowing:
 **`Booking` references `User` twice** — once as `teacherId`, once as `learnerId`. There is no
 separate teacher table, because everyone is both.
 
+**There is a stored procedure and three functions.** `adjust_user_credits` moves
+credits and writes the ledger row in one call, refusing anything that would take
+a balance below zero; `ledger_balance()` rebuilds a balance from the ledger alone.
+
 **`User.rating` and `User.reviewCount` are maintained by a database trigger.**
 `review_rating_sync_trigger` fires on every insert, update and delete against `Review` and
 recomputes them with `AVG`. The application never does this arithmetic — which means a review
@@ -290,8 +294,11 @@ have cost real time.
 | [`03-table-to-ui-mapping.md`](docs/03-table-to-ui-mapping.md) | Which table appears on which screen |
 | [`04-trigger.md`](docs/04-trigger.md) | The rating trigger, with a before-and-after script |
 | [`05-redis.md`](docs/05-redis.md) | What Redis does here and how to inspect it |
+| [`06-vector-search.md`](docs/06-vector-search.md) | pgvector: creation, CRUD on embeddings, similarity search |
+| [`schema.sql`](docs/schema.sql) | Complete DDL — types, tables, constraints, indexes, procedure, trigger |
 | [`crud-operations.sql`](docs/crud-operations.sql) | Create, read, update and delete on all six tables |
-| [`demo-queries.sql`](docs/demo-queries.sql) | Queries from simple counts to a ranked nested query |
+| [`demo-queries.sql`](docs/demo-queries.sql) | Joins, aggregates, correlated, recursive and a ranked nested query |
+| [`demo-seed.sql`](docs/demo-seed.sql) / [`demo-teardown.sql`](docs/demo-teardown.sql) | Demo dataset that the queries can return rows from |
 
 Both `.sql` files run clean top to bottom and clean up after themselves.
 

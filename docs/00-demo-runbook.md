@@ -16,10 +16,17 @@ redis-cli ping            # expect PONG; if not: brew services start redis
 # 3. The app
 cd .. && npm run dev      # backend :5001, frontend :3000
 
-# 4. Seed something to show. The demo rows come from the CRUD sheet:
-cd backend
-PGPASSWORD='...' psql "<url>" -f ../docs/crud-operations.sql
+# 4. Seed data the queries can actually return. This one LEAVES its rows:
+PGPASSWORD='...' psql "<url>" -f docs/demo-seed.sql
+
+# 5. Embeddings for the seeded skills, so vector search has something to find
+cd backend && node backfill-embeddings.js && cd ..
 ```
+
+Afterwards, `psql "<url>" -f docs/demo-teardown.sql` removes all of it.
+
+`crud-operations.sql` is separate: it creates its own rows and deletes them
+again at the end, so run it for the CRUD section rather than for seeding.
 
 Open three terminal tabs and leave them open: `psql`, `redis-cli`, and the dev
 server. Switching between them is most of the demo.
@@ -99,7 +106,7 @@ SELECT name, rating, "reviewCount" FROM "User" WHERE email = 'demo-alice@example
 
 The point to land: the `INSERT` touched only `"Review"`, yet `"User"` changed.
 
-## 8. The complex nested query
+## 8. The complex nested query, and the recursive one
 
 Bottom of `docs/demo-queries.sql`. Two CTEs, a scalar subquery and a window
 function: teachers performing above the platform average, ranked.
@@ -108,7 +115,46 @@ Be ready to explain **why the two CTEs are separate** — joining bookings and
 reviews in one pass multiplies rows and inflates the credit totals. That is the
 part worth understanding, not the syntax.
 
-## 9. Redis CRUD
+Above it in the same file is the **recursive** query: completed bookings form a
+graph of who taught whom, and `WITH RECURSIVE` walks it. With the seed data it
+finds a two-hop chain:
+
+```
+ knowledge_from |  reached   | hops |                chain
+----------------+------------+------+--------------------------------------
+ Demo Alice     | Demo Carol |    2 | Demo Alice -> Demo Bob -> Demo Carol
+```
+
+The question to expect is *what stops it looping* — A teaching B and B teaching
+A is legal here. The answer is the path array plus `<> ALL(path)`, with a depth
+cap behind it.
+
+There is also a **stored procedure**, `adjust_user_credits`, in
+`docs/04-trigger.md`'s sibling migration:
+
+```sql
+CALL adjust_user_credits('demo-u-bob', 25, 'Demo grant');
+SELECT name, "creditBalance", ledger_balance(id) FROM "User" WHERE id = 'demo-u-bob';
+```
+
+It refuses a zero amount, a blank reason, an unknown user, and any deduction
+that would go below zero. `ledger_balance()` rebuilds the balance from the
+`Transaction` rows alone — it should always agree.
+
+## 9. Vector and Redis CRUD
+
+Two datastores to show here, and the rubric weights this heavily.
+
+**Vector** — `docs/06-vector-search.md`. The `pgvector` extension, the
+`vector(384)` column, the HNSW index, then CRUD: `backfill-embeddings.js` to
+create, `vector_dims`/`vector_norm` to read, `NULL` + backfill to update,
+`DELETE` to remove. Finish with a similarity comparison using `<=>`.
+
+Be honest about the limitation documented there — on four short demo
+descriptions the distances cluster and the ordering is nearly noise. It works on
+realistic queries, and the hybrid keyword half covers exact names.
+
+**Redis**
 
 `docs/05-redis.md`. Plain `SET`/`GET`/`INCR`/`EXPIRE`/`DEL` first, then the live
 cache: search on `/discover`, watch `cache:search:*` keys appear, read one, watch
