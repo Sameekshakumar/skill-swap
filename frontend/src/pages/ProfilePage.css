@@ -424,3 +424,143 @@
   margin-right: 0;
 }
 
+
+/* Curriculum editor. Colour is taken from the theme tokens only — a hex here
+   would win over styles/theme.css and silently break dark mode. */
+.curriculum {
+  margin-top: 1rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.curriculum-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.625rem;
+}
+
+.curriculum-title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--secondary-text);
+}
+
+.curriculum-add-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--accent-color);
+  cursor: pointer;
+}
+
+.curriculum-add-btn:hover {
+  text-decoration: underline;
+}
+
+.curriculum-empty {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--secondary-text);
+}
+
+.curriculum-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.curriculum-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+}
+
+.curriculum-index {
+  flex: 0 0 1.375rem;
+  height: 1.375rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  background: var(--purple-light);
+  color: var(--purple-accent);
+}
+
+.curriculum-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.curriculum-item-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--primary-text);
+}
+
+.curriculum-item-content {
+  margin: 0.125rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--secondary-text);
+}
+
+.curriculum-remove-btn {
+  background: none;
+  border: none;
+  padding: 0 0.25rem;
+  font-size: 1.125rem;
+  line-height: 1;
+  color: var(--secondary-text);
+  cursor: pointer;
+}
+
+.curriculum-remove-btn:hover {
+  color: var(--action-reject);
+}
+
+.curriculum-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.curriculum-input,
+.curriculum-textarea {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background: var(--input-bg);
+  color: var(--primary-text);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.curriculum-textarea {
+  resize: vertical;
+}
+
+.curriculum-input:focus,
+.curriculum-textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.curriculum-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

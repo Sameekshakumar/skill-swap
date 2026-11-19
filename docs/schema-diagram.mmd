@@ -1,0 +1,121 @@
+erDiagram
+    USER ||--o{ SKILL : "userId"
+    SKILL ||--o{ SKILLMODULE : "skillId"
+    USER ||--o{ SKILLTOLEARN : "userId"
+    USER ||--o{ BOOKING : "teacherId / learnerId"
+    SKILL ||--o{ BOOKING : "skillId"
+    USER ||--o{ TRANSACTION : "userId"
+    BOOKING ||--o{ TRANSACTION : "bookingId"
+    USER ||--o{ REVIEW : "reviewerId / revieweeId"
+    BOOKING ||--o{ REVIEW : "bookingId"
+
+    USER {
+        text id PK "DEFAULT uuid"
+        text email UK "User_email_key"
+        text passwordHash "nullable, bcrypt"
+        Role role "DEFAULT 'user'"
+        UserStatus status "DEFAULT 'active'"
+        text name "NOT NULL"
+        text college "nullable"
+        text yearOfStudy "nullable"
+        text bio "nullable"
+        text avatarUrl "nullable"
+        integer creditBalance "DEFAULT 10"
+        double_precision rating "DEFAULT 0, set by trigger"
+        integer reviewCount "DEFAULT 0, set by trigger"
+        timestamp createdAt "DEFAULT CURRENT_TIMESTAMP"
+        timestamp updatedAt "NOT NULL"
+    }
+
+    SKILL {
+        text id PK "DEFAULT uuid"
+        text userId FK "USER.id ON DELETE CASCADE"
+        text skillName "NOT NULL, Skill_skillName_idx"
+        text description "NOT NULL"
+        SkillLevel level "NOT NULL"
+        integer creditsPerHour "DEFAULT 1"
+        vector_384 embedding "nullable, HNSW cosine"
+        timestamp createdAt "DEFAULT CURRENT_TIMESTAMP"
+        timestamp updatedAt "NOT NULL"
+    }
+
+    SKILLMODULE {
+        text id PK "DEFAULT uuid"
+        text skillId FK "SKILL.id ON DELETE CASCADE"
+        text title "NOT NULL"
+        text content "NOT NULL"
+        integer position "DEFAULT 0, idx(skillId,position)"
+        vector_384 embedding "nullable, HNSW cosine"
+        timestamp createdAt "DEFAULT CURRENT_TIMESTAMP"
+        timestamp updatedAt "NOT NULL"
+    }
+
+    SKILLTOLEARN {
+        text id PK "DEFAULT uuid"
+        text userId FK "USER.id ON DELETE CASCADE"
+        text skillName "UNIQUE(userId, skillName)"
+        timestamp createdAt "DEFAULT CURRENT_TIMESTAMP"
+    }
+
+    BOOKING {
+        text id PK "DEFAULT uuid"
+        text teacherId FK "USER.id RESTRICT"
+        text learnerId FK "USER.id RESTRICT"
+        text skillId FK "SKILL.id ON DELETE SET NULL, nullable"
+        text skill "name copied at booking time"
+        BookingStatus status "DEFAULT 'Requested', indexed"
+        integer creditAmount "NOT NULL"
+        timestamp dateTime "NOT NULL"
+        integer duration "DEFAULT 1"
+        boolean completedByLearner "DEFAULT false"
+        boolean completedByTeacher "DEFAULT false"
+        BookingParty cancelledBy "nullable"
+        text notes "nullable"
+        timestamp createdAt "DEFAULT CURRENT_TIMESTAMP"
+        timestamp updatedAt "NOT NULL"
+    }
+
+    TRANSACTION {
+        text id PK "DEFAULT uuid"
+        text userId FK "USER.id ON DELETE CASCADE"
+        text bookingId FK "BOOKING.id ON DELETE SET NULL, nullable"
+        TransactionType type "NOT NULL"
+        integer amount "signed"
+        text description "nullable"
+        timestamp createdAt "DEFAULT CURRENT_TIMESTAMP"
+        timestamp updatedAt "NOT NULL"
+    }
+
+    REVIEW {
+        text id PK "DEFAULT uuid"
+        text reviewerId FK "USER.id ON DELETE CASCADE"
+        text revieweeId FK "USER.id ON DELETE CASCADE"
+        text bookingId FK "BOOKING.id ON DELETE CASCADE"
+        integer rating "1..5"
+        text comment "nullable"
+        text skill "NOT NULL"
+        timestamp createdAt "DEFAULT CURRENT_TIMESTAMP"
+        timestamp updatedAt "NOT NULL"
+    }
+
+    ENUM_TYPES {
+        enum Role "user | admin"
+        enum UserStatus "active | suspended"
+        enum SkillLevel "Beginner | Intermediate | Advanced | Expert"
+        enum BookingStatus "Requested | Confirmed | Completed | Cancelled"
+        enum BookingParty "learner | teacher | admin"
+        enum TransactionType "Initial | Lock | Transfer | Refund | Adjustment"
+    }
+
+    PROGRAMMABILITY {
+        procedure adjust_user_credits "admin credit change, refuses negative balance"
+        function refresh_user_rating "recomputes User.rating with AVG"
+        function review_rating_sync "trigger body"
+        function ledger_balance "sums Transaction.amount for a user"
+        trigger review_rating_sync_trigger "AFTER INSERT/UPDATE/DELETE ON Review"
+    }
+
+    VECTOR_INDEXES {
+        index Skill_embedding_idx "hnsw (embedding vector_cosine_ops)"
+        index SkillModule_embedding_idx "hnsw (embedding vector_cosine_ops)"
+    }

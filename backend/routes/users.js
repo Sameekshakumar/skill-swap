@@ -62,6 +62,10 @@ router.get('/teachers/search', auth, async (req, res) => {
         level: row.level,
         creditsPerHour: row.creditsPerHour,
         description: row.description,
+        // Only the count on a search card — the curriculum itself is on the
+        // teacher's page. The module text still affects ranking, because it is
+        // part of the skill's embedding.
+        moduleCount: row.moduleCount,
         teacherRating: row.rating,
         teacherReviews: row.reviewCount
       })),
@@ -95,7 +99,10 @@ router.get('/:id', auth, async (req, res) => {
         rating: true,
         reviewCount: true,
         createdAt: true,
-        skillsToTeach: { orderBy: { createdAt: 'asc' } }
+        skillsToTeach: {
+          orderBy: { createdAt: 'asc' },
+          include: { modules: { orderBy: { position: 'asc' } } }
+        }
       }
     });
 

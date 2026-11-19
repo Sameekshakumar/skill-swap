@@ -20,6 +20,7 @@ interface Teacher {
   reviews: number;
   bio: string;
   imageUrl: string;
+  moduleCount: number;
 }
 
 export default function SearchPage() {
@@ -55,7 +56,8 @@ export default function SearchPage() {
     reviews: row.teacherReviews || 0,
     bio: row.description || row.teacherBio || 'No description available',
     imageUrl: row.teacherAvatar
-      || `https://ui-avatars.com/api/?name=${encodeURIComponent(row.teacherName)}&background=4f46e5&color=fff&size=150`
+      || `https://ui-avatars.com/api/?name=${encodeURIComponent(row.teacherName)}&background=4f46e5&color=fff&size=150`,
+    moduleCount: row.moduleCount || 0
   });
 
   const buildParams = (nextPage: number) => {
@@ -236,6 +238,12 @@ export default function SearchPage() {
                   </div>
                   
                   <p className="teacher-bio">{teacher.bio}</p>
+
+                  {teacher.moduleCount > 0 && (
+                    <Link to={`/teachers/${teacher.id}`} className="curriculum-count">
+                      {teacher.moduleCount} {teacher.moduleCount === 1 ? 'module' : 'modules'} in the curriculum
+                    </Link>
+                  )}
                   
                   <div className="teacher-stats">
                     <span className="proficiency-tag">{teacher.proficiency}</span>

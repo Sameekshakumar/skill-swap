@@ -11,6 +11,9 @@ const teach = (token, skillName, level, creditsPerHour, description) =>
     body: { skillName, level, creditsPerHour, description }
   });
 
+const addModule = (token, skillId, title, content) =>
+  call('POST', `/profile/skills/teach/${skillId}/modules`, { token, body: { title, content } });
+
 const search = async (token, query) => {
   const res = await call('GET', `/users/teachers/search?query=${encodeURIComponent(query)}`, { token });
   assert.strictEqual(res.status, 200, JSON.stringify(res.body));
@@ -27,10 +30,18 @@ const search = async (token, query) => {
   const photo = `Photography${tag}`;
 
   await teach(teacher.token, guitar, 'Beginner', 1, 'Chords, strumming patterns and your first few songs');
-  await teach(teacher.token, photo, 'Beginner', 1, 'Composition, exposure and editing your photos afterwards');
+  const added = await teach(teacher.token, photo, 'Beginner', 1, 'Composition, exposure and editing your photos afterwards');
+  const photoId = added.body.find((s) => s.skillName === photo).id;
 
-  // Embeddings are generated in the background after the skill is saved.
-  await new Promise((r) => setTimeout(r, 6000));
+  // A module about something the skill's own description never mentions. If
+  // modules are searchable, this is the only place these words exist.
+  await addModule(
+    teacher.token, photoId, 'Shutter speed',
+    'Freezing motion versus motion blur, and how long an exposure you can hand-hold.'
+  );
+
+  // Embeddings are generated in the background after the row is saved.
+  await new Promise((r) => setTimeout(r, 8000));
 
   // Keyword matching still works.
   assert.ok((await search(seeker.token, guitar)).includes(guitar), 'exact name did not match');
@@ -41,6 +52,22 @@ const search = async (token, query) => {
 
   const pictures = await search(seeker.token, 'teach me to take better pictures');
   assert.ok(pictures.includes(photo), `"take better pictures" did not find the photography skill (got ${pictures})`);
+
+  // Module text has to reach search, both by meaning and by keyword. These
+  // words appear in no skill name or description — only in the module.
+  const motion = await search(seeker.token, 'freezing fast motion in a photo');
+  assert.ok(motion.includes(photo),
+    `a query matching only module text did not find the skill (got ${motion})`);
+
+  const byKeyword = await search(seeker.token, 'hand-hold');
+  assert.ok(byKeyword.includes(photo),
+    `keyword search did not look inside module content (got ${byKeyword})`);
+
+  // The count is what a search card shows.
+  const cards = await call(
+    'GET', `/users/teachers/search?query=${encodeURIComponent(photo)}`, { token: seeker.token });
+  const card = cards.body.results.find((r) => r.skillName === photo);
+  assert.strictEqual(card.moduleCount, 1, 'moduleCount missing from search results');
 
   // Unrelated queries must stay empty, or the floor is too low to be useful.
   const nonsense = await search(seeker.token, 'underwater basket weaving championships');

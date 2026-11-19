@@ -1,7 +1,7 @@
 # ER diagram
 
-Six tables in `public`, plus `_prisma_migrations` which Prisma manages and is not
-part of the design.
+Seven tables in `public`, plus `_prisma_migrations` which Prisma manages and is
+not part of the design.
 
 ```mermaid
 erDiagram
@@ -12,6 +12,7 @@ erDiagram
     USER ||--o{ TRANSACTION : "owns ledger row"
     USER ||--o{ REVIEW : "writes"
     USER ||--o{ REVIEW : "receives"
+    SKILL ||--o{ SKILLMODULE : "is broken into"
     SKILL ||--o{ BOOKING : "is booked as"
     BOOKING ||--o{ TRANSACTION : "moves credits for"
     BOOKING ||--o{ REVIEW : "is reviewed in"
@@ -42,6 +43,17 @@ erDiagram
         enum   level "Beginner | Intermediate | Advanced | Expert"
         int    creditsPerHour "1..3"
         vector embedding "vector(384), pgvector"
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    SKILLMODULE {
+        string id PK "uuid"
+        string skillId FK "-> SKILL.id, ON DELETE CASCADE"
+        string title "e.g. Barre chords"
+        string content "what it covers and how to work through it"
+        int    position "order in the curriculum, 0-based"
+        vector embedding "vector(384), pgvector, one per module"
         datetime createdAt
         datetime updatedAt
     }
@@ -100,6 +112,7 @@ erDiagram
 | From | To | Kind | Notes |
 |------|----|------|-------|
 | User | Skill | 1 : N | What a person teaches. Deleting the user deletes their listings. |
+| Skill | SkillModule | 1 : N | The curriculum: an ordered list of what the sessions cover. Deleting the listing deletes its modules. |
 | User | SkillToLearn | 1 : N | What a person wants to learn. `UNIQUE(userId, skillName)` stops duplicates. |
 | User | Booking | 1 : N, **twice** | Once as `teacherId`, once as `learnerId`. The same table holds both roles, so one person can teach some sessions and learn in others. |
 | Skill | Booking | 1 : N | Nullable. The booking also stores the skill *name*, so history survives the listing being deleted. |
@@ -108,7 +121,17 @@ erDiagram
 | User | Review | 1 : N, **twice** | `reviewerId` (written) and `revieweeId` (received). |
 | Booking | Review | 1 : N | `UNIQUE(bookingId, reviewerId)` allows at most one review per person per session — so a session yields at most two. |
 
-## Two things worth pointing out
+## Three things worth pointing out
+
+**`SkillModule` is the only second-level child.** Every other table hangs
+directly off `User`. This one hangs off `Skill`, which itself hangs off `User`,
+so reading a teacher's full curriculum is a three-table join. It exists because
+`Skill.description` was a single paragraph: it could say *that* a skill was
+taught, but not *what* the sessions cover or in what order. Splitting the
+curriculum into rows means it can be ordered, counted, searched and edited one
+piece at a time.
+
+
 
 **`Booking` has two foreign keys to the same table.** `teacherId` and `learnerId`
 both reference `User.id`. That is what makes a peer-to-peer exchange possible

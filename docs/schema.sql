@@ -16,25 +16,32 @@
 -- Contents
 --   6  enum types        BookingParty, BookingStatus, Role, SkillLevel,
 --                        TransactionType, UserStatus
---   6  tables            User, Skill, SkillToLearn, Booking, Transaction, Review
+--   7  tables            User, Skill, SkillModule, SkillToLearn, Booking,
+--                        Transaction, Review
 --                        (plus _prisma_migrations, which Prisma manages)
 --   1  procedure         adjust_user_credits
 --   3  functions         ledger_balance, refresh_user_rating, review_rating_sync
 --   1  trigger           review_rating_sync_trigger on Review
---   13 indexes           including Skill_embedding_idx (HNSW, pgvector)
+--   15 indexes           including two HNSW pgvector indexes,
+--                        Skill_embedding_idx and SkillModule_embedding_idx
 --   11 foreign keys      with per-relationship ON DELETE rules
 --
 -- Note the delete rules on Booking: teacherId and learnerId have no ON DELETE
 -- clause, so they default to RESTRICT. That is deliberate — deleting a
 -- participant mid-session would strand the other side's history and credits.
 -- Every other foreign key to "User" cascades.
+--
+-- Two vector columns, not one: Skill.embedding and SkillModule.embedding.
+-- Folding a skill's module text into the skill's own vector was measured and
+-- it diluted the skill, so each module is embedded and matched separately.
+-- See backend/lib/embeddings.js and docs/06-vector-search.md.
 -- ===========================================================================
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict OJENjVvpZmeYiRKCyGhd2tl64QFiCCdOaWnJNb6EfJMnJIFNYuOEYr5cHyh7ars
+\restrict 8wqJnEFLWzveIkvf0ZY12w14ewvw6ututdSfQZQDYEQesgDMyhgqC330yJQMyFI
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.10 (Homebrew)
@@ -291,6 +298,22 @@ CREATE TABLE public."Skill" (
 
 
 --
+-- Name: SkillModule; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."SkillModule" (
+    id text NOT NULL,
+    title text NOT NULL,
+    content text NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL,
+    "skillId" text NOT NULL,
+    embedding public.vector(384)
+);
+
+
+--
 -- Name: SkillToLearn; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -374,6 +397,14 @@ ALTER TABLE ONLY public."Review"
 
 
 --
+-- Name: SkillModule SkillModule_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."SkillModule"
+    ADD CONSTRAINT "SkillModule_pkey" PRIMARY KEY (id);
+
+
+--
 -- Name: SkillToLearn SkillToLearn_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -446,6 +477,20 @@ CREATE UNIQUE INDEX "Review_bookingId_reviewerId_key" ON public."Review" USING b
 --
 
 CREATE INDEX "Review_revieweeId_idx" ON public."Review" USING btree ("revieweeId");
+
+
+--
+-- Name: SkillModule_embedding_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "SkillModule_embedding_idx" ON public."SkillModule" USING hnsw (embedding public.vector_cosine_ops);
+
+
+--
+-- Name: SkillModule_skillId_position_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX "SkillModule_skillId_position_idx" ON public."SkillModule" USING btree ("skillId", "position");
 
 
 --
@@ -560,6 +605,14 @@ ALTER TABLE ONLY public."Review"
 
 
 --
+-- Name: SkillModule SkillModule_skillId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."SkillModule"
+    ADD CONSTRAINT "SkillModule_skillId_fkey" FOREIGN KEY ("skillId") REFERENCES public."Skill"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: SkillToLearn SkillToLearn_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -595,5 +648,5 @@ ALTER TABLE ONLY public."Transaction"
 -- PostgreSQL database dump complete
 --
 
-\unrestrict OJENjVvpZmeYiRKCyGhd2tl64QFiCCdOaWnJNb6EfJMnJIFNYuOEYr5cHyh7ars
+\unrestrict 8wqJnEFLWzveIkvf0ZY12w14ewvw6ututdSfQZQDYEQesgDMyhgqC330yJQMyFI
 

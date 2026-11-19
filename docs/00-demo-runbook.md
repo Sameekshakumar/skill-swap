@@ -19,7 +19,8 @@ cd .. && npm run dev      # backend :5001, frontend :3000
 # 4. Seed data the queries can actually return. This one LEAVES its rows:
 PGPASSWORD='...' psql "<url>" -f docs/demo-seed.sql
 
-# 5. Embeddings for the seeded skills, so vector search has something to find
+# 5. Embeddings for the seeded skills and their modules, so vector search has
+#    something to find. Fills both vector columns.
 cd backend && node backfill-embeddings.js && cd ..
 ```
 

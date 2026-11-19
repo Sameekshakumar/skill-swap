@@ -1,7 +1,15 @@
 const prisma = require('./prisma');
 
+// The curriculum comes along with the skill everywhere it is read, so the
+// profile page can render and edit it without a second round trip.
+const MODULES = { orderBy: { position: 'asc' } };
+
 const teachSkillsFor = (userId) =>
-  prisma.skill.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } });
+  prisma.skill.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'asc' },
+    include: { modules: MODULES }
+  });
 
 // skillsToLearn was an array of plain strings under mongoose — keep that shape.
 const learnSkillsFor = async (userId) => {
@@ -16,7 +24,9 @@ const learnSkillsFor = async (userId) => {
 const profileFor = async (userId) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: { skillsToTeach: { orderBy: { createdAt: 'asc' } } }
+    include: {
+      skillsToTeach: { orderBy: { createdAt: 'asc' }, include: { modules: MODULES } }
+    }
   });
   if (!user) return null;
 
@@ -32,4 +42,4 @@ const profileFor = async (userId) => {
   };
 };
 
-module.exports = { teachSkillsFor, learnSkillsFor, profileFor };
+module.exports = { teachSkillsFor, learnSkillsFor, profileFor, MODULES };

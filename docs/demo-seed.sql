@@ -24,17 +24,18 @@ DELETE FROM "Review"       WHERE "bookingId" LIKE 'demo-bk%';
 DELETE FROM "Transaction"  WHERE "userId" LIKE 'demo-u%';
 DELETE FROM "Booking"      WHERE id LIKE 'demo-bk%';
 DELETE FROM "SkillToLearn" WHERE "userId" LIKE 'demo-u%';
+DELETE FROM "SkillModule"  WHERE id LIKE 'demo-sm%';
 DELETE FROM "Skill"        WHERE id LIKE 'demo-sk%';
 DELETE FROM "User"         WHERE id LIKE 'demo-u%';
 
 -- --- Users ---------------------------------------------------------------
--- The hash is a real bcrypt hash of 'demo-password-123', so these accounts
--- can actually be signed into in the UI if you want to show that too.
+-- Password for all four demo accounts: demo-password-123
+-- (verified bcrypt hash, so these accounts really can be signed into in the UI).
 INSERT INTO "User" (id, email, name, "passwordHash", role, status, college, "yearOfStudy", bio, "creditBalance", "updatedAt") VALUES
- ('demo-u-alice', 'demo-alice@example.com', 'Demo Alice', '$2b$10$N9qo8uLOickgx2ZMRZoMye1VdLvCqZmTiLQ0eQ4nXKLSB2qkUE1Oi', 'admin', 'active', 'PES University', '4th Year', 'Maths tutor and occasional guitarist', 10, NOW()),
- ('demo-u-bob',   'demo-bob@example.com',   'Demo Bob',   '$2b$10$N9qo8uLOickgx2ZMRZoMye1VdLvCqZmTiLQ0eQ4nXKLSB2qkUE1Oi', 'user',  'active', 'PES University', '3rd Year', 'Learning maths, teaching guitar',        10, NOW()),
- ('demo-u-carol', 'demo-carol@example.com', 'Demo Carol', '$2b$10$N9qo8uLOickgx2ZMRZoMye1VdLvCqZmTiLQ0eQ4nXKLSB2qkUE1Oi', 'user',  'active', 'RV College',     '2nd Year', 'Here to learn an instrument',            10, NOW()),
- ('demo-u-dan',   'demo-dan@example.com',   'Demo Dan',   '$2b$10$N9qo8uLOickgx2ZMRZoMye1VdLvCqZmTiLQ0eQ4nXKLSB2qkUE1Oi', 'user',  'suspended', 'RV College',   '1st Year', 'Suspended, to show the status filter',   10, NOW());
+ ('demo-u-alice', 'demo-alice@example.com', 'Demo Alice', '$2b$10$2kh0S48aJPBWzqEmR7WQ2.f90Z7srV/uWNWksyMIbz26c9RiLci5O', 'admin', 'active', 'PES University', '4th Year', 'Maths tutor and occasional guitarist', 10, NOW()),
+ ('demo-u-bob',   'demo-bob@example.com',   'Demo Bob',   '$2b$10$2kh0S48aJPBWzqEmR7WQ2.f90Z7srV/uWNWksyMIbz26c9RiLci5O', 'user',  'active', 'PES University', '3rd Year', 'Learning maths, teaching guitar',        10, NOW()),
+ ('demo-u-carol', 'demo-carol@example.com', 'Demo Carol', '$2b$10$2kh0S48aJPBWzqEmR7WQ2.f90Z7srV/uWNWksyMIbz26c9RiLci5O', 'user',  'active', 'RV College',     '2nd Year', 'Here to learn an instrument',            10, NOW()),
+ ('demo-u-dan',   'demo-dan@example.com',   'Demo Dan',   '$2b$10$2kh0S48aJPBWzqEmR7WQ2.f90Z7srV/uWNWksyMIbz26c9RiLci5O', 'user',  'suspended', 'RV College',   '1st Year', 'Suspended, to show the status filter',   10, NOW());
 
 -- --- Skills offered ------------------------------------------------------
 INSERT INTO "Skill" (id, "userId", "skillName", description, level, "creditsPerHour", "updatedAt") VALUES
@@ -42,6 +43,23 @@ INSERT INTO "Skill" (id, "userId", "skillName", description, level, "creditsPerH
  ('demo-sk-stats', 'demo-u-alice', 'Demo Statistics',    'Distributions, hypothesis testing, p-values',    'Intermediate', 2, NOW()),
  ('demo-sk-gtr',   'demo-u-bob',   'Demo Guitar',        'Open chords, strumming and your first songs',    'Beginner',     1, NOW()),
  ('demo-sk-photo', 'demo-u-carol', 'Demo Photography',   'Exposure, composition and editing basics',       'Intermediate', 2, NOW());
+
+-- --- Curriculum ----------------------------------------------------------
+-- The modules a skill is broken into, in the order they are taught. This is
+-- the detail that search matches on as well: module text is folded into the
+-- skill's embedding, so "hypothesis testing" finds Demo Statistics even though
+-- the words appear only here.
+INSERT INTO "SkillModule" (id, "skillId", title, content, position, "updatedAt") VALUES
+ ('demo-sm-calc-1',  'demo-sk-calc',  'Limits and continuity',   'Epsilon-delta intuition, one-sided limits, and spotting where a function breaks.', 0, NOW()),
+ ('demo-sm-calc-2',  'demo-sk-calc',  'Differentiation',         'Power, product, quotient and chain rules, then implicit differentiation.',         1, NOW()),
+ ('demo-sm-calc-3',  'demo-sk-calc',  'Integration techniques',  'Substitution, integration by parts, and partial fractions with worked exams.',     2, NOW()),
+ ('demo-sm-stats-1', 'demo-sk-stats', 'Describing data',         'Mean, median, variance, and which summary lies to you about which shape.',         0, NOW()),
+ ('demo-sm-stats-2', 'demo-sk-stats', 'Hypothesis testing',      'Null and alternative hypotheses, p-values, and what significance does not mean.',   1, NOW()),
+ ('demo-sm-gtr-1',   'demo-sk-gtr',   'Holding the instrument',  'Posture, fretting hand shape, and tuning by ear against a reference note.',        0, NOW()),
+ ('demo-sm-gtr-2',   'demo-sk-gtr',   'Open chords',             'G, C, D and E minor, then changing between them in time without stopping.',        1, NOW()),
+ ('demo-sm-gtr-3',   'demo-sk-gtr',   'Strumming patterns',      'Down-up patterns, keeping a steady wrist, and playing along to a metronome.',      2, NOW()),
+ ('demo-sm-photo-1', 'demo-sk-photo', 'The exposure triangle',   'Aperture, shutter speed and ISO, and the trade you make between them.',            0, NOW()),
+ ('demo-sm-photo-2', 'demo-sk-photo', 'Composition',             'Rule of thirds, leading lines, and deciding what to leave out of the frame.',      1, NOW());
 
 -- --- Skills wanted -------------------------------------------------------
 INSERT INTO "SkillToLearn" (id, "userId", "skillName") VALUES

@@ -92,9 +92,38 @@ model Skill {
   userId   String
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookings Booking[]
+  modules  SkillModule[]
 
   @@index([userId])
   @@index([skillName])
+}
+
+// The curriculum for a skill: an ordered list of what gets covered and how to
+// work through it, the way a course page lists its sections. One row per
+// module, so the content can be read, reordered and searched on its own rather
+// than living inside Skill.description as one paragraph.
+//
+// Module text is part of the parent skill's embedding (lib/embeddings.js), so
+// adding or removing one re-embeds the Skill.
+model SkillModule {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  // Each module carries its own vector rather than being folded into the
+  // parent skill's. Concatenating them was measured and it diluted the skill:
+  // a query matching one module scored worse than before modules existed. Same
+  // Unsupported() caveat as Skill.embedding — never SELECT m.* in a raw query.
+  embedding Unsupported("vector(384)")?
+  // Order within the curriculum. Assigned on insert as (count so far), so
+  // rows read back in the order they were added.
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  skillId String
+  skill   Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@index([skillId, position])
 }
 
 model SkillToLearn {

@@ -1,9 +1,10 @@
 # Vector search: creation, CRUD and the feature it powers
 
 The vector database is not a separate server — it is PostgreSQL with the
-[`pgvector`](https://github.com/pgvector/pgvector) extension. `Skill.embedding`
-holds a 384-dimension vector per skill, and search compares them by cosine
-distance.
+[`pgvector`](https://github.com/pgvector/pgvector) extension. There are **two**
+vector columns, both 384-dimension, both compared by cosine distance:
+`Skill.embedding` for the listing itself, and `SkillModule.embedding` for each
+module of its curriculum.
 
 Code: `backend/lib/embeddings.js` (text → vector) and `backend/lib/skillSearch.js`
 (the query). Backfill: `backend/backfill-embeddings.js`.
@@ -34,6 +35,15 @@ ALTER TABLE "Skill" ADD COLUMN "embedding" vector(384);
 
 CREATE INDEX "Skill_embedding_idx"
   ON "Skill" USING hnsw ("embedding" vector_cosine_ops);
+```
+
+and the same again for modules, from `20261119080000_skill_module_embeddings`:
+
+```sql
+ALTER TABLE "SkillModule" ADD COLUMN "embedding" vector(384);
+
+CREATE INDEX "SkillModule_embedding_idx"
+  ON "SkillModule" USING hnsw ("embedding" vector_cosine_ops);
 ```
 
 Three decisions worth explaining:
@@ -206,9 +216,44 @@ Neither alone is good enough. Keyword search misses anything phrased
 differently. Pure semantic search is vague when somebody types an exact skill
 name and expects that exact skill first. Taking the better of the two gets both.
 
-There is also a relevance floor, so a query that matches nothing returns nothing
-rather than the least-bad row in the table. It was measured against real
+There is also a relevance floor (0.36), so a query that matches nothing returns
+nothing rather than the least-bad row in the table. It was measured against real
 queries, not guessed, and must be re-measured if the model changes.
+
+### One vector per module, not one per skill
+
+A skill's semantic score is the **best** of its own vector and its best module's:
+
+```sql
+GREATEST(
+  COALESCE(1 - (s."embedding" <=> $query::vector), 0),
+  COALESCE((SELECT max(1 - (m."embedding" <=> $query::vector))
+            FROM "SkillModule" m
+            WHERE m."skillId" = s."id" AND m."embedding" IS NOT NULL), 0)
+)
+```
+
+The obvious alternative — concatenate the module text onto the skill's own text
+and embed the lot as one vector — was built first and then measured against it.
+It was worse. Averaging a description together with every module drags the
+vector toward the mean of everything the skill covers, so **6 of 9 test queries
+scored lower than they had before modules existed at all**:
+
+| query | skill-only | skill + modules concatenated | module gets its own vector |
+|-------|-----------|------------------------------|----------------------------|
+| learn to play songs | 0.378 | 0.318 | **0.378** |
+| derivatives and limits | 0.558 | 0.479 | **0.558** |
+| integration by parts | 0.300 | 0.288 | **0.624** |
+| rule of thirds | 0.149 *(wrong skill)* | 0.197 *(wrong skill)* | **0.564** |
+| shutter speed | 0.321 | 0.416 | **0.548** |
+
+Separate vectors keep the skill's own meaning undiluted *and* let a specific
+phrase match the one module that teaches it. After the change the lowest true
+match scored 0.378 and the highest false positive 0.300, so the existing 0.36
+floor still separates them.
+
+The keyword half searches module `title` and `content` too, scored like a
+description match (0.75).
 
 ## An honest limitation
 
