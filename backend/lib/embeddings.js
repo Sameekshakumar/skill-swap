@@ -41,10 +41,22 @@ const embed = async (text) => {
 // pgvector accepts a bracketed list, e.g. '[0.01,-0.2,...]'.
 const toVectorLiteral = (values) => `[${values.join(',')}]`;
 
-// What a skill's embedding is actually built from. The description carries the
-// meaning, but the name and level matter too — "Guitar" alone should still
-// match somebody searching for guitar.
+// What a skill's embedding is built from. The description carries the meaning,
+// but the name and level matter too — "Guitar" alone should still match
+// somebody searching for guitar.
+//
+// Modules are deliberately NOT concatenated in here. That was tried and
+// measured: averaging the description together with every module dilutes the
+// skill, and 6 of 9 test queries scored lower than they did before modules
+// existed. Each module gets its own vector instead (moduleText below), and
+// lib/skillSearch.js scores a skill as the best of the two.
 const skillText = ({ skillName, level, description }) =>
   [skillName, level, description].filter(Boolean).join('. ');
 
-module.exports = { embed, toVectorLiteral, skillText, DIMENSIONS, MODEL };
+// One module on its own. Short and specific is the point: a query like
+// "barre chords" should match the module that teaches them, not compete with
+// everything else the skill covers.
+const moduleText = ({ title, content }) =>
+  [title, content].filter(Boolean).join('. ');
+
+module.exports = { embed, toVectorLiteral, skillText, moduleText, DIMENSIONS, MODEL };

@@ -6,12 +6,19 @@ import { getInitials, handleApiError } from '../utils/helpers';
 import ReviewsList from '../components/reviews/ReviewsList';
 import './ProfilePage.css';
 
+interface SkillModule {
+  id: string;
+  title: string;
+  content: string;
+}
+
 interface Skill {
   id?: string;
   skillName: string;
   level?: string;
   creditsPerHour?: number;
   description?: string;
+  modules?: SkillModule[];
 }
 
 interface ModalProps {
@@ -154,6 +161,113 @@ const AddSkillModal = ({ modalType, onClose, onSubmit }: ModalProps) => {
   );
 };
 
+// The curriculum for one teaching skill: the ordered list of what the sessions
+// cover. Kept inline rather than adding a file — it is only used here, and the
+// teacher's public page renders the read-only version itself.
+const CurriculumEditor = ({ skill, onAdd, onRemove }: {
+  skill: Skill;
+  onAdd: (skillId: string, module: { title: string; content: string }) => Promise<void>;
+  onRemove: (skillId: string, moduleId: string) => void;
+}) => {
+  const [isAdding, setIsAdding] = useState(false);
+  const [draft, setDraft] = useState({ title: '', content: '' });
+  const [saving, setSaving] = useState(false);
+
+  const modules = skill.modules ?? [];
+
+  const reset = () => {
+    setDraft({ title: '', content: '' });
+    setIsAdding(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!skill.id || !draft.title.trim() || !draft.content.trim()) return;
+
+    setSaving(true);
+    try {
+      await onAdd(skill.id, { title: draft.title.trim(), content: draft.content.trim() });
+      reset();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="curriculum">
+      <div className="curriculum-header">
+        <h4 className="curriculum-title">
+          Curriculum{modules.length > 0 ? ` · ${modules.length}` : ''}
+        </h4>
+        {!isAdding && (
+          <button type="button" className="curriculum-add-btn" onClick={() => setIsAdding(true)}>
+            + Add module
+          </button>
+        )}
+      </div>
+
+      {modules.length === 0 && !isAdding && (
+        <p className="curriculum-empty">
+          No modules yet. Break the skill into steps so learners know what they get.
+        </p>
+      )}
+
+      {modules.length > 0 && (
+        <ol className="curriculum-list">
+          {modules.map((module, index) => (
+            <li key={module.id} className="curriculum-item">
+              <span className="curriculum-index">{index + 1}</span>
+              <div className="curriculum-item-body">
+                <p className="curriculum-item-title">{module.title}</p>
+                <p className="curriculum-item-content">{module.content}</p>
+              </div>
+              <button
+                type="button"
+                className="curriculum-remove-btn"
+                aria-label={`Remove ${module.title}`}
+                onClick={() => skill.id && onRemove(skill.id, module.id)}
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {isAdding && (
+        <form className="curriculum-form" onSubmit={handleSubmit}>
+          <input
+            type="text"
+            className="curriculum-input"
+            placeholder="Module title, e.g. Barre chords"
+            value={draft.title}
+            onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+          />
+          <textarea
+            className="curriculum-textarea"
+            rows={2}
+            placeholder="What it covers and how to work through it"
+            value={draft.content}
+            onChange={(e) => setDraft({ ...draft, content: e.target.value })}
+          />
+          <div className="curriculum-form-actions">
+            <button type="button" className="modal-btn-cancel" onClick={reset} disabled={saving}>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="modal-btn-submit"
+              disabled={saving || !draft.title.trim() || !draft.content.trim()}
+            >
+              {saving ? 'Saving…' : 'Add module'}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+};
+
 const ProfilePage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'teach' | 'learn'>('teach');
@@ -237,6 +351,27 @@ const ProfilePage = () => {
           skillsToLearn: response.data
         } : null);
       }
+    } catch (err) {
+      setError(handleApiError(err));
+    }
+  };
+
+  // Both curriculum calls return the caller's full teaching list, so the whole
+  // array is replaced rather than patched — the server has already renumbered
+  // positions and re-embedded the skill by then.
+  const handleAddModule = async (skillId: string, module: { title: string; content: string }) => {
+    try {
+      const response = await axios.post(`/profile/skills/teach/${skillId}/modules`, module);
+      setProfile(prev => prev ? { ...prev, skillsToTeach: response.data } : null);
+    } catch (err) {
+      setError(handleApiError(err));
+    }
+  };
+
+  const handleRemoveModule = async (skillId: string, moduleId: string) => {
+    try {
+      const response = await axios.delete(`/profile/skills/teach/${skillId}/modules/${moduleId}`);
+      setProfile(prev => prev ? { ...prev, skillsToTeach: response.data } : null);
     } catch (err) {
       setError(handleApiError(err));
     }
@@ -426,6 +561,12 @@ const ProfilePage = () => {
                   </span>
                 </div>
                 <p className="skill-description">{skill.description}</p>
+
+                <CurriculumEditor
+                  skill={skill}
+                  onAdd={handleAddModule}
+                  onRemove={handleRemoveModule}
+                />
               </div>
             ))}
           </div>

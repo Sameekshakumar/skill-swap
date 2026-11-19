@@ -38,8 +38,13 @@ Frontend calls relative `/api`; Vite proxies to `localhost:5001` (`frontend/vite
   `/api/reviews`, `/api/admin`.
   `/api/users` now has exactly one endpoint, `GET /teachers/search` — the CRUD endpoints under it
   were unused and were removed.
-- Models live in `prisma/schema.prisma`: `User`, `Skill`, `SkillToLearn`, `Booking`,
-  `Transaction`, `Review`. `creditBalance` defaults to 10.
+- Models live in `prisma/schema.prisma`: `User`, `Skill`, `SkillModule`, `SkillToLearn`,
+  `Booking`, `Transaction`, `Review`. `creditBalance` defaults to 10.
+- **`SkillModule` is a skill's curriculum** — an ordered list (`position`, 0-based) of
+  what the sessions cover, the way a course page lists its sections. It is the only
+  second-level child: it hangs off `Skill`, not `User`. `POST`/`DELETE
+  /profile/skills/teach/:skillId/modules[/:moduleId]`, both scoped to the owner (404
+  otherwise). Cascades when the skill goes.
 - `lib/httpError.js` — throw `HttpError(status, message)` inside a `$transaction` to roll it
   back with a real status code; `sendError(res, err, fallback)` in the catch.
 - `lib/profile.js` — the shared "user minus password, with both skill lists" shape. It
@@ -190,19 +195,29 @@ Search is **hybrid**: every row is scored on keyword match and on meaning, and r
 whichever is higher. Keyword alone misses anything phrased differently; meaning alone is
 vague when somebody types an exact skill name.
 
-Meaning comes from an embedding — a 384-number fingerprint of the skill, stored in
-`Skill.embedding` (pgvector) and compared with cosine distance. The model runs locally
-(`lib/embeddings.js`, `Xenova/all-MiniLM-L6-v2`), downloaded once into `node_modules`; there
-is no API key and no per-call cost.
+Meaning comes from an embedding — a 384-number fingerprint, compared with cosine distance.
+The model runs locally (`lib/embeddings.js`, `Xenova/all-MiniLM-L6-v2`), downloaded once into
+`node_modules`; there is no API key and no per-call cost.
+
+**There are two vector columns, not one**: `Skill.embedding` and `SkillModule.embedding`.
+A skill's semantic score is `GREATEST(own vector, best module vector)`. Folding module text
+into the skill's own vector was built first, measured, and reverted — averaging a
+description together with every module dilutes it, and 6 of 9 test queries scored *lower*
+than before modules existed. Keep them separate.
 
 - Embeddings are written with raw SQL. Prisma has no vector type, so the column is
   `Unsupported()` in the schema and invisible to the generated client — **never `SELECT s.*`
-  from `Skill` in a raw query**, or Prisma fails to deserialise the vector.
-- New skills are embedded in the background after saving, so a slow model never fails the
-  request. `node backfill-embeddings.js` fills in anything missing, `--all` redoes everything
-  after a model change.
-- The relevance floor in `lib/skillSearch.js` was measured, not guessed. Re-measure if the
-  model changes.
+  from `Skill`, or `m.*` from `SkillModule`, in a raw query**, or Prisma fails to
+  deserialise the vector.
+- New skills and new modules are embedded in the background after saving, so a slow model
+  never fails the request. `node backfill-embeddings.js` fills in anything missing in *both*
+  columns, `--all` redoes everything after a model change.
+- The relevance floor (0.36) in `lib/skillSearch.js` was measured, not guessed, and
+  re-measured on 19 November 2026 after modules got their own vectors: lowest true match
+  0.378, highest false positive 0.300. Re-measure if the model changes **or if what goes
+  into either vector changes**.
+- The keyword half searches module `title` and `content` too, scored 0.75 like a
+  description match.
 
 `GET /api/users/teachers/search` filters and pages **in the database** — `query`, `level`,
 `maxRate`, `minRating`, `page`, `limit`, returning `{ results, total, page, hasMore }`. The
@@ -265,9 +280,19 @@ so it is self-correcting, and it fires for raw SQL too.
 
 `docs/` holds the material for the course evaluation: ER diagram, the
 Mongo → relational writeup, the table-to-UI mapping, `crud-operations.sql`
-(CRUD on all six tables), `demo-queries.sql`, the trigger walkthrough, the Redis
+(CRUD on all seven tables), `demo-queries.sql`, the trigger walkthrough, the Redis
 guide, and `00-demo-runbook.md` tying them together. Both `.sql` files run clean
 end to end against the live database; re-run them after a schema change.
+
+Two rendered diagrams, both regenerated with `npx -y @mermaid-js/mermaid-cli@11`:
+`01-er-diagram.png` (from the mermaid block inside `01-er-diagram.md`) and
+`schema.png` (from `schema-diagram.mmd`, the physical schema — real Postgres types,
+enums, indexes, the procedure and the trigger). **Mermaid rejects `%%` comments that
+appear before the diagram keyword**, which is why `schema-diagram.mmd` carries none.
+
+**Anything `crud-operations.sql` updates or deletes must be scoped to `CRUD %` rows.**
+Its module titles collide with `demo-seed.sql`'s, so a `WHERE title = ...` with no skill
+filter silently edits the demo curriculum instead. That happened once.
 
 `"updatedAt"` must be supplied by hand in raw SQL inserts — Prisma's `@updatedAt`
 is applied client-side, not as a database default.
@@ -346,6 +371,12 @@ These each cost real time once, and none of them produce an error message.
   stripped there now; keep it that way.
 - **Test accounts are `smoke-*@example.com` and `uicheck-*@example.com`.** Clean them up —
   an interrupted run once left three fake teachers showing in Discover.
+- **`prisma migrate dev` exits 0 without doing anything in a non-interactive shell.** It
+  prints the datasource line and stops. Check `prisma migrate status` rather than trusting
+  the exit code; the fallback is `migrate diff` + `migrate deploy`.
+- **`migrate diff` wants to `DROP INDEX "Skill_embedding_idx"` every time.** Prisma cannot
+  see an index on an `Unsupported()` column, so it reads as drift. Strip that line out of
+  generated migration SQL — the same applies to `SkillModule_embedding_idx` now.
 
 ### Testing
 

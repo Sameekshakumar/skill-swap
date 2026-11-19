@@ -306,3 +306,18 @@
   color: var(--secondary-text);
   font-weight: 400;
 }
+
+/* Curriculum hint on a search card. Colour comes from existing theme tokens —
+   page stylesheets must not declare their own. */
+.curriculum-count {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+.curriculum-count:hover {
+  text-decoration: underline;
+}

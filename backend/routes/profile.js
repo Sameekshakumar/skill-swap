@@ -9,7 +9,7 @@ const redis = require('../lib/redis');
 // Every cached search page is invalidated when a listing changes; without this
 // a newly added skill stays invisible for up to the cache TTL.
 const SEARCH_CACHE_PREFIX = 'cache:search:';
-const { storeEmbeddingSafely } = require('../lib/skillSearch');
+const { storeEmbeddingSafely, storeModuleEmbeddingSafely } = require('../lib/skillSearch');
 
 const SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
 
@@ -120,6 +120,79 @@ router.delete('/skills/teach/:skillId', auth, async (req, res) => {
     });
     await redis.dropPrefix(SEARCH_CACHE_PREFIX);
 
+    res.json(await teachSkillsFor(req.user.id));
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// --- Curriculum -----------------------------------------------------------
+//
+// A skill's modules are its curriculum: an ordered list of what gets covered.
+// Each module carries its own embedding, so adding one embeds that module
+// rather than re-embedding the skill — the skill's own vector is unaffected by
+// its curriculum (see lib/embeddings.js for why). Both routes drop the search
+// cache so a change is searchable straight away.
+
+// Only the owner of the skill may touch its curriculum. Returns the skill row
+// or null, so the caller can answer 404 without a second query.
+const ownedSkill = (skillId, userId) =>
+  prisma.skill.findFirst({ where: { id: skillId, userId } });
+
+// Add a module to a teaching skill
+router.post('/skills/teach/:skillId/modules', auth, [
+  check('title', 'Module title is required').trim().notEmpty(),
+  check('content', 'Module content is required').trim().notEmpty()
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const skill = await ownedSkill(req.params.skillId, req.user.id);
+    if (!skill) return res.status(404).json({ msg: 'Skill not found' });
+
+    // Appended to the end. Counting is enough while modules are only added and
+    // removed; a reorder endpoint would need explicit positions.
+    const position = await prisma.skillModule.count({ where: { skillId: skill.id } });
+
+    const created = await prisma.skillModule.create({
+      data: {
+        title: req.body.title.trim(),
+        content: req.body.content.trim(),
+        position,
+        skillId: skill.id
+      }
+    });
+
+    // In the background, like the skill embedding: the module is already
+    // saved, and keyword search finds it until the vector lands.
+    storeModuleEmbeddingSafely(created.id, created);
+    await redis.dropPrefix(SEARCH_CACHE_PREFIX);
+    res.json(await teachSkillsFor(req.user.id));
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// Remove a module from a teaching skill
+router.delete('/skills/teach/:skillId/modules/:moduleId', auth, async (req, res) => {
+  try {
+    const skill = await ownedSkill(req.params.skillId, req.user.id);
+    if (!skill) return res.status(404).json({ msg: 'Skill not found' });
+
+    // Scoped to the skill as well as the id, so a module id from someone
+    // else's listing cannot be deleted by guessing it.
+    await prisma.skillModule.deleteMany({
+      where: { id: req.params.moduleId, skillId: skill.id }
+    });
+
+    // Nothing to re-embed: the row and its vector are gone, and the skill's
+    // own vector never included the module.
+    await redis.dropPrefix(SEARCH_CACHE_PREFIX);
     res.json(await teachSkillsFor(req.user.id));
   } catch (err) {
     console.error(err.message);

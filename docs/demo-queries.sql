@@ -151,6 +151,40 @@ ORDER BY s."skillName";
 
 
 -- ===========================================================================
+-- The curriculum: Skill -> SkillModule, the second-level 1:N
+-- ===========================================================================
+--
+-- Every other table hangs straight off "User". "SkillModule" hangs off
+-- "Skill", so reading a teacher's curriculum is a three-table join.
+
+-- Each skill with its modules in teaching order.
+SELECT u.name AS teacher, s."skillName", m."position" + 1 AS step, m.title
+FROM "Skill" s
+JOIN "User" u        ON u.id = s."userId"
+JOIN "SkillModule" m ON m."skillId" = s.id
+WHERE s.id LIKE 'demo-sk%'
+ORDER BY u.name, s."skillName", m."position";
+
+-- How deep each curriculum goes. LEFT JOIN so a skill with no modules still
+-- appears, with 0 — an INNER JOIN would silently hide it.
+SELECT s."skillName",
+       COUNT(m.id)                      AS modules,
+       ROUND(AVG(LENGTH(m.content)), 1) AS avg_content_chars
+FROM "Skill" s
+LEFT JOIN "SkillModule" m ON m."skillId" = s.id
+WHERE s.id LIKE 'demo-sk%'
+GROUP BY s."skillName"
+ORDER BY modules DESC, s."skillName";
+
+-- Which listings still have no curriculum at all.
+SELECT s."skillName", u.name AS teacher
+FROM "Skill" s
+JOIN "User" u ON u.id = s."userId"
+WHERE s.id LIKE 'demo-sk%'
+  AND NOT EXISTS (SELECT 1 FROM "SkillModule" m WHERE m."skillId" = s.id);
+
+
+-- ===========================================================================
 -- REQUIREMENT 8 — the complex nested query
 -- ===========================================================================
 --

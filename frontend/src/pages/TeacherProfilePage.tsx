@@ -8,12 +8,19 @@ import { getInitials, handleApiError } from '../utils/helpers';
 import ReviewsList from '../components/reviews/ReviewsList';
 import './TeacherProfilePage.css';
 
+interface SkillModule {
+  id: string;
+  title: string;
+  content: string;
+}
+
 interface TeacherSkill {
   id: string;
   skillName: string;
   level: string;
   creditsPerHour: number;
   description: string;
+  modules: SkillModule[];
 }
 
 interface TeacherProfile {
@@ -138,6 +145,26 @@ export default function TeacherProfilePage() {
                     <span className="skill-tag credits">{skill.creditsPerHour} credits/hr</span>
                   </div>
                   <p className="teacher-skill-description">{skill.description}</p>
+
+                  {skill.modules?.length > 0 && (
+                    <div className="skill-curriculum">
+                      <h4 className="skill-curriculum-title">
+                        What this covers · {skill.modules.length}{' '}
+                        {skill.modules.length === 1 ? 'module' : 'modules'}
+                      </h4>
+                      <ol className="skill-curriculum-list">
+                        {skill.modules.map((module, index) => (
+                          <li key={module.id} className="skill-curriculum-item">
+                            <span className="skill-curriculum-index">{index + 1}</span>
+                            <div>
+                              <p className="skill-curriculum-item-title">{module.title}</p>
+                              <p className="skill-curriculum-item-content">{module.content}</p>
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
 
                   {!isOwnProfile && (
                     <button

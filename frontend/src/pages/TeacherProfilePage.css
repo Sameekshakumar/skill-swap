@@ -128,3 +128,60 @@
   color: var(--accent-color);
   font-weight: 600;
 }
+
+/* Curriculum. All colour comes from the theme tokens in styles/theme.css —
+   a local hex here would beat the theme and break dark mode. */
+.skill-curriculum {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.skill-curriculum-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--secondary-text);
+}
+
+.skill-curriculum-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.skill-curriculum-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.skill-curriculum-index {
+  flex: 0 0 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--purple-light);
+  color: var(--purple-accent);
+}
+
+.skill-curriculum-item-title {
+  margin: 0;
+  font-weight: 600;
+  color: var(--primary-text);
+}
+
+.skill-curriculum-item-content {
+  margin: 0.125rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--secondary-text);
+}

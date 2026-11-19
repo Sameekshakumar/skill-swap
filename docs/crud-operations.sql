@@ -9,6 +9,9 @@
 -- Unquoted, Postgres folds identifiers to lowercase and "User" becomes "user",
 -- which does not exist. Every statement below keeps the quotes.
 --
+-- Seven tables, in dependency order: User, Skill, SkillModule, SkillToLearn,
+-- Booking, Transaction, Review.
+--
 -- Rows created here use the crud-* prefix, kept separate from demo-seed.sql's
 -- demo-* rows so this script's UPDATEs and DELETEs cannot touch them.
 -- The teardown at the bottom deletes all of them.
@@ -31,6 +34,7 @@ DELETE FROM "Review"       WHERE skill LIKE 'CRUD %';
 DELETE FROM "Transaction"  WHERE "userId" IN (SELECT id FROM "User" WHERE email LIKE 'crud-%@example.com');
 DELETE FROM "Booking"      WHERE skill LIKE 'CRUD %';
 DELETE FROM "SkillToLearn" WHERE "skillName" LIKE 'CRUD %';
+DELETE FROM "SkillModule"  WHERE "skillId" IN (SELECT id FROM "Skill" WHERE "skillName" LIKE 'CRUD %');
 DELETE FROM "Skill"        WHERE "skillName" LIKE 'CRUD %';
 DELETE FROM "User"         WHERE email LIKE 'crud-%@example.com';
 
@@ -102,7 +106,56 @@ DELETE FROM "Skill" WHERE "skillName" = 'CRUD Guitar';
 
 
 -- ===========================================================================
--- 3. SkillToLearn
+-- 3. SkillModule
+-- ---------------------------------------------------------------------------
+-- The curriculum of a skill: one row per module, ordered by "position".
+-- Modules hang off "Skill", not off "User", so this is the only table that is
+-- two levels down — reading a teacher's curriculum is a three-table join.
+-- ===========================================================================
+
+-- CREATE  (attached to CRUD Calculus; CRUD Guitar was deleted above, and its
+--          modules would have gone with it — the FK is ON DELETE CASCADE.)
+INSERT INTO "SkillModule" (id, "skillId", title, content, "position", "updatedAt")
+SELECT gen_random_uuid(), s.id, 'Limits and continuity',
+       'One-sided limits and spotting where a function breaks.', 0, NOW()
+FROM "Skill" s WHERE s."skillName" = 'CRUD Calculus';
+
+INSERT INTO "SkillModule" (id, "skillId", title, content, "position", "updatedAt")
+SELECT gen_random_uuid(), s.id, 'Differentiation',
+       'Power, product, quotient and chain rules.', 1, NOW()
+FROM "Skill" s WHERE s."skillName" = 'CRUD Calculus';
+
+-- READ  (same rule as "Skill": never SELECT m.* — "SkillModule"."embedding"
+--        is a vector and the Prisma client cannot deserialise it.)
+SELECT m."position", m.title, m.content, s."skillName", u.name AS teacher
+FROM "SkillModule" m
+JOIN "Skill" s ON s.id = m."skillId"
+JOIN "User"  u ON u.id = s."userId"
+WHERE s."skillName" LIKE 'CRUD %'
+ORDER BY s."skillName", m."position";
+
+-- How many modules each skill is broken into — this is the count the search
+-- cards show.
+SELECT s."skillName", COUNT(m.id) AS modules
+FROM "Skill" s
+LEFT JOIN "SkillModule" m ON m."skillId" = s.id
+WHERE s."skillName" LIKE 'CRUD %'
+GROUP BY s."skillName";
+
+-- UPDATE  (scoped to this script's own skill. Matching on title alone would
+--          also hit demo-seed.sql's curriculum, which reuses these titles.)
+UPDATE "SkillModule" SET content = 'Epsilon-delta intuition and one-sided limits.'
+WHERE title = 'Limits and continuity'
+  AND "skillId" IN (SELECT id FROM "Skill" WHERE "skillName" LIKE 'CRUD %');
+
+-- DELETE  (same scoping, same reason)
+DELETE FROM "SkillModule"
+WHERE title = 'Differentiation'
+  AND "skillId" IN (SELECT id FROM "Skill" WHERE "skillName" LIKE 'CRUD %');
+
+
+-- ===========================================================================
+-- 4. SkillToLearn
 -- ===========================================================================
 
 -- CREATE
@@ -125,7 +178,7 @@ DELETE FROM "SkillToLearn" WHERE "skillName" = 'CRUD Film Photography';
 
 
 -- ===========================================================================
--- 4. Booking
+-- 5. Booking
 -- ===========================================================================
 
 -- CREATE  (Alice teaches, Bob learns)
@@ -158,7 +211,7 @@ WHERE skill = 'CRUD Calculus' AND status = 'Confirmed';
 
 
 -- ===========================================================================
--- 5. Transaction
+-- 6. Transaction
 -- ===========================================================================
 
 -- CREATE: the learner's credits are locked when they request a session
@@ -194,7 +247,7 @@ DELETE FROM "Transaction" WHERE description = 'CRUD goodwill credit (corrected)'
 
 
 -- ===========================================================================
--- 6. Review
+-- 7. Review
 -- ===========================================================================
 -- Inserting here fires the review_rating_sync trigger, which rewrites the
 -- reviewee's rating and reviewCount. See docs/04-trigger.md.
@@ -240,6 +293,7 @@ DELETE FROM "Review" WHERE skill LIKE 'CRUD %';
 DELETE FROM "Transaction" WHERE "userId" IN (SELECT id FROM "User" WHERE email LIKE 'crud-%@example.com');
 DELETE FROM "Booking" WHERE skill LIKE 'CRUD %';
 DELETE FROM "SkillToLearn" WHERE "skillName" LIKE 'CRUD %';
+DELETE FROM "SkillModule" WHERE "skillId" IN (SELECT id FROM "Skill" WHERE "skillName" LIKE 'CRUD %');
 DELETE FROM "Skill" WHERE "skillName" LIKE 'CRUD %';
 DELETE FROM "User" WHERE email LIKE 'crud-%@example.com';
 

@@ -11,6 +11,9 @@ to the screen that displays it.
 | `User.creditBalance` | `GET /api/profile` | `routes/profile.js` | Navbar — `Navbar.tsx` | The credit pill, top right |
 | `Skill` | `GET /api/users/teachers/search` | `routes/users.js` | `/discover` — `SearchPage.tsx` | Every teacher card in the search results |
 | `Skill` | `POST /api/profile/skills/teach` | `routes/profile.js` | `/profile` | "Skills I Can Teach" |
+| `SkillModule` | `POST /api/profile/skills/teach/:skillId/modules` | `routes/profile.js` | `/profile` | The curriculum editor under each teaching skill |
+| `SkillModule` | `GET /api/users/:id` | `routes/users.js` | `/teachers/:id` — `TeacherProfilePage.tsx` | "What this covers" — the numbered module list |
+| `SkillModule` (count) | `GET /api/users/teachers/search` | `routes/users.js` | `/discover` | "N modules in the curriculum" on a teacher card |
 | `SkillToLearn` | `POST /api/profile/skills/learn` | `routes/profile.js` | `/profile` | "Skills I Want to Learn" |
 | `Booking` | `GET /api/bookings` | `routes/bookings.js` | `/dashboard` — `DashboardPage.tsx` | "My Sessions" |
 | `Booking` | `GET /api/bookings/requests` | `routes/bookings.js` | `/dashboard` | Incoming requests awaiting accept/reject |
